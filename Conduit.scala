@@ -39,8 +39,8 @@ case class Done[I,O,R](result: R)
 object Pipe {
   def apply[I,O,R](result: R): Pipe[I,O,R] = Done(result);
 
-  def request[I,O,R]: Pipe[I,O,Option[I]] =
-    NeedInput(i => Done(Some(i)));
+  def request[I,O,R]: Pipe[I,O,I] =
+    NeedInput(i => Done(i));
 
   def respond[I,O,R](o: O): Pipe[I,O,Unit] =
     HaveOutput(o, () => { Done(()) })

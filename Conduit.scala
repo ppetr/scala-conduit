@@ -8,6 +8,34 @@ sealed trait Pipe[I,O,R]
   final def >->[X](that: Pipe[O,X,R]) = Pipe.pipe(this, that);
   final def <-<[X](that: Pipe[X,I,R]) = Pipe.pipe(that, this);
 }
+
+case class HaveOutput[I,O,R](output: O, next: () => Pipe[I,O,R])
+    extends Pipe[I,O,R]
+{
+  def flatMap[R1](f: R => Pipe[I,O,R1]): Pipe[I,O,R1] =
+    HaveOutput(output, () => { next().flatMap(f) });
+  def map[R1](f: R => R1): Pipe[I,O,R1] =
+    HaveOutput(output, () => { next().map(f) });
+}
+
+case class NeedInput[I,O,R](consume: I => Pipe[I,O,R])
+    extends Pipe[I,O,R]
+{
+  def flatMap[R1](f: R => Pipe[I,O,R1]): Pipe[I,O,R1] =
+    NeedInput(i => consume(i).flatMap(f));
+  def map[R1](f: R => R1): Pipe[I,O,R1] =
+    NeedInput(i => consume(i).map(f));
+}
+
+case class Done[I,O,R](result: R)
+    extends Pipe[I,O,R] {
+  def flatMap[R1](f: R => Pipe[I,O,R1]): Pipe[I,O,R1] =
+    f(result);
+  def map[R1](f: R => R1): Pipe[I,O,R1] =
+    Done(f(result));
+}
+
+
 object Pipe {
   def apply[I,O,R](result: R): Pipe[I,O,R] = Done(result);
 
@@ -15,7 +43,7 @@ object Pipe {
     NeedInput(i => Done(Some(i)));
 
   def respond[I,O,R](o: O): Pipe[I,O,Unit] =
-    HaveOutput(o, _ => Done(()))
+    HaveOutput(o, () => { Done(()) })
 
   /**
    * Composes two pipes, blocked on respond. This means that the second
@@ -28,11 +56,11 @@ object Pipe {
     while (true) {
       val consume = outp match {
         case Done(r)              => return Done(r)
-        case HaveOutput(o, next)  => return HaveOutput(o, _ => pipe(inp, next(())))
+        case HaveOutput(o, next)  => return HaveOutput(o, () => { pipe(inp, next()) } )
         case NeedInput(f)         => f;
       }
       inp match {
-        case HaveOutput(x, next)  => { i = next(()); o = consume(x); }
+        case HaveOutput(x, next)  => { i = next(); o = consume(x); }
         case Done(r)              => return Done(r)
         case NeedInput(c)         => return NeedInput((x: I) => pipe(c(x), outp));
       }
@@ -51,31 +79,5 @@ object Pipe {
     }
 
   def idP[A,R]: Pipe[A,A,R] =
-    NeedInput(x => HaveOutput(x, _ => idP));
-}
-
-case class HaveOutput[I,O,R](output: O, next: Unit => Pipe[I,O,R])
-    extends Pipe[I,O,R]
-{
-  def flatMap[R1](f: R => Pipe[I,O,R1]): Pipe[I,O,R1] =
-    HaveOutput(output, _ => { next(()).flatMap(f) });
-  def map[R1](f: R => R1): Pipe[I,O,R1] =
-    HaveOutput(output, _ => { next(()).map(f) });
-}
-
-case class NeedInput[I,O,R](consume: I => Pipe[I,O,R])
-    extends Pipe[I,O,R]
-{
-  def flatMap[R1](f: R => Pipe[I,O,R1]): Pipe[I,O,R1] =
-    NeedInput(i => consume(i).flatMap(f));
-  def map[R1](f: R => R1): Pipe[I,O,R1] =
-    NeedInput(i => consume(i).map(f));
-}
-
-case class Done[I,O,R](result: R)
-    extends Pipe[I,O,R] {
-  def flatMap[R1](f: R => Pipe[I,O,R1]): Pipe[I,O,R1] =
-    f(result);
-  def map[R1](f: R => R1): Pipe[I,O,R1] =
-    Done(f(result));
+    NeedInput(x => HaveOutput(x, () => { idP }));
 }

@@ -28,9 +28,16 @@ object PipeUtil extends App {
       .forever.finalizer({ w.close(); println("Closed output"); });
  
 
-  def fromIterable[A](i: Iterable[A]): Pipe[Any,A,Unit] = fromIterator(i.iterator);
-  def fromIterator[A](i: Iterator[A]): Pipe[Any,A,Unit] =
+  def fromSeq[A](values: A*): Pipe[Any,A,Unit] = fromIterable(values);
+  def fromIterable[A](i : Iterable[A]): Pipe[Any,A,Unit]
+    = fromIterator(i.iterator);
+  def fromIterator[A](i : Iterator[A]): Pipe[Any,A,Unit] =
     until(if (i.hasNext) Some(respond[A](i.next())) else None);
+
+  def fromIterable[A]: Pipe[Iterable[A],A,Any] =
+    unfold[Iterable[A],A,Unit](i => fromIterable(i));
+  def fromIterator[A]: Pipe[Iterator[A],A,Any] =
+    unfold[Iterator[A],A,Unit](i => fromIterator(i));
 
   //def toCol[A,O,C <: Growable[A]](c: C): Pipe[A,O,C] =
  

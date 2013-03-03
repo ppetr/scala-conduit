@@ -19,11 +19,13 @@ final case class NeedInput[-I,+O,R](consume: I => Pipe[I,O,R])
     extends Pipe[I,O,R];
 final case class Done[-I,+O,R](result: R)
     extends Pipe[I,O,R];
-final case class Delay[I,O,R](delayed: () => Pipe[I,O,R], finalizer: Option[() => Unit])
+final case class Delay[I,O,R](delayed: () => Pipe[I,O,R], finalizer: Traversable[Pipe.Finalizer])
     extends Pipe[I,O,R];
 
 
 object Pipe {
+  type Finalizer = () => Unit;
+
   def finish: Pipe[Any,Nothing,Unit] = finish(());
   def finish[R](result: => R): Pipe[Any,Nothing,R] = Done(result);
 
@@ -33,7 +35,7 @@ object Pipe {
     = delay(p, None);
   def delay[I,O,R](p: => Pipe[I,O,R], finalizer: => Unit): Pipe[I,O,R]
     = delay(p, Some(() => finalizer));
-  def delay[I,O,R](p: => Pipe[I,O,R], finalizer: Option[() => Unit]): Pipe[I,O,R]
+  def delay[I,O,R](p: => Pipe[I,O,R], finalizer: Traversable[Finalizer]): Pipe[I,O,R]
     = Delay(() => p, finalizer);
 
   def request[I]: Pipe[I,Nothing,I] =
@@ -79,6 +81,15 @@ object Pipe {
     loop();
   }
 
+  def unfold[I,O,A](f: I => Pipe[Any,O,A]): Pipe[I,O,Nothing] =
+    request[I,O,A](f).forever;
+
+  def repeat[O](produce: => O): Pipe[Any,O,Nothing] = {
+    def loop(): Pipe[Any,O,Nothing]
+      = HaveOutput(produce, loop _);
+    delay(loop());
+  }
+
 
   /**
    * Composes two pipes, blocked on respond. This means that the second
@@ -122,16 +133,20 @@ object Pipe {
   private def runPipe[R](pipe: Pipe[Unit,Nothing,R], fins: Buffer[() => Unit]): R = {
     pipe match {
       case Done(r)            => r;
-      case Delay(p, None)     => runPipe(p());
-      case Delay(p, Some(fin))=> runPipe(p(), fins += fin);
+      case Delay(p, fin)      => runPipe(p(), fins ++= fin);
       case HaveOutput(o, _)   => o;
       case NeedInput(consume) => runPipe(consume(()));
     }
   }
 
   def idP[A]: Pipe[A,A,Any] =
-    NeedInput(x => HaveOutput(x, () => { idP }));
+    NeedInput(x => HaveOutput(x, () => idP));
 
+  def arrP[I,O](f: I => O): Pipe[I,O,Any] = {
+    def loop(): Pipe[I,O,Any] =
+      NeedInput(x => HaveOutput(f(x), loop _));
+    loop();
+  }
 
 
   implicit def pipeFlatMap[I,O,A](pipe: Pipe[I,O,A]) = new {
@@ -140,5 +155,23 @@ object Pipe {
 
     def >->[X](that: Pipe[O,X,A]) = Pipe.pipe(pipe, that);
     def <-<[X](that: Pipe[X,I,A]) = Pipe.pipe(that, pipe);
+  }
+
+
+  /**
+   * Executes the given finalizer only the first time {@link #apply()} is called.
+   * This class is <em>not</em> synchronized.
+   */
+  class RunOnce(actions: Finalizer*)
+    extends Finalizer
+  {
+    private var finished: Boolean = false;
+
+    override def apply(): Unit = {
+      if (!finished) {
+        finished = true;
+        actions.foreach(_.apply());
+      }
+    }
   }
 }

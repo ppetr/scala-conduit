@@ -107,12 +107,21 @@ object Pipe {
   }
 
 
-  def runPipe[R](pipe: Pipe[Unit,Nothing,R]): R =
-    runPipe(pipe, new ArrayBuffer);
+  def runPipe[R](pipe: Pipe[Unit,Nothing,R]): R = {
+    val fins = new ArrayBuffer[() => Unit]
+    try {
+      runPipe(pipe, fins);
+    } finally {
+      fins.foreach(_.apply());
+    }
+  }
+  /**
+   * Note: Doesn't run the finalizers!
+   */
   @tailrec
   private def runPipe[R](pipe: Pipe[Unit,Nothing,R], fins: Buffer[() => Unit]): R = {
     pipe match {
-      case Done(r)            => for(f <- fins) { f(); }; r;
+      case Done(r)            => r;
       case Delay(p, None)     => runPipe(p());
       case Delay(p, Some(fin))=> runPipe(p(), fins += fin);
       case HaveOutput(o, _)   => o;

@@ -1,4 +1,5 @@
 import annotation.tailrec
+import collection.mutable.{ArrayBuffer, Buffer}
 
 sealed trait Pipe[I,O,R]
 {
@@ -10,6 +11,7 @@ sealed trait Pipe[I,O,R]
   final def <-<[X](that: Pipe[X,I,R]) = Pipe.pipe(that, this);
 
   final def forever[R]: Pipe[I,O,R] = Pipe.forever(this);
+  final def finalizer(fin: => Unit): Pipe[I,O,R] = Pipe.delay(this, fin);
 
   implicit def extend[I1 <: I,O1 >: O]: Pipe[I1,O1,R];
 }
@@ -50,16 +52,16 @@ case class Done[I,O,R](result: R)
     Done(result);
 }
 
-case class Delay[I,O,R](delayed: () => Pipe[I,O,R])
+case class Delay[I,O,R](delayed: () => Pipe[I,O,R], finalizer: Option[() => Unit])
     extends Pipe[I,O,R]
 {
   def flatMap[R1](f: R => Pipe[I,O,R1]): Pipe[I,O,R1] =
-    Delay(() => delayed().flatMap(f));
+    Delay(() => delayed().flatMap(f), finalizer);
   def map[R1](f: R => R1): Pipe[I,O,R1] =
-    Delay(() => delayed().map(f));
+    Delay(() => delayed().map(f), finalizer);
 
   def extend[I1 <: I,O1 >: O]: Pipe[I1,O1,R] =
-    Delay(() => delayed().extend);
+    Delay(() => delayed().extend, finalizer);
 }
 
 
@@ -67,7 +69,10 @@ object Pipe {
   def finish[I,O]: Pipe[I,O,Unit] = Done(());
   def finish[I,O,R](result: => R): Pipe[I,O,R] = Done(result);
 
-  def delay[I,O,R](p: => Pipe[I,O,R]): Pipe[I,O,R] = Delay(() => p);
+  def delay[I,O,R](p: => Pipe[I,O,R]): Pipe[I,O,R]
+    = Delay(() => p, None);
+  def delay[I,O,R](p: => Pipe[I,O,R], finalizer: => Unit): Pipe[I,O,R]
+    = Delay(() => p, Some(() => finalizer));
 
   def request[I,O]: Pipe[I,O,I] =
     NeedInput(i => Done(i));
@@ -87,17 +92,17 @@ object Pipe {
     var i = inp;
     var o = outp;
     while (true) {
-      o match {
+      val consume = o match {
         case Done(r)              => return Done(r)
-        case Delay(o1)            => o = o1();
+        case Delay(o1, fin)       => return Delay(() => pipe(i, o1()), fin);
         case HaveOutput(o, next)  => return HaveOutput(o, () => { pipe(i, next()) } )
-        case NeedInput(consume)   =>
-          i match {
-            case HaveOutput(x, next)  => { i = next(); o = consume(x); }
-            case Delay(i1)            => i = i1();
-            case Done(r)              => return Done(r)
-            case NeedInput(c)         => return NeedInput((x: I) => pipe(c(x), o));
-          }
+        case NeedInput(f)         => f
+      }
+      i match {
+        case HaveOutput(x, next)  => { i = next(); o = consume(x); }
+        case Delay(i1, fin)       => return Delay(() => pipe(i1(), o), fin);
+        case Done(r)              => return Done(r)
+        case NeedInput(c)         => return NeedInput((x: I) => pipe(c(x), o));
       }
     }
     // Just to satisfy the compiler, we never get here.
@@ -105,11 +110,14 @@ object Pipe {
   }
 
 
+  def runPipe[R](pipe: Pipe[Unit,Nothing,R]): R =
+    runPipe(pipe, new ArrayBuffer);
   @tailrec
-  def runPipe[R](pipe: Pipe[Unit,Nothing,R]): R = {
+  private def runPipe[R](pipe: Pipe[Unit,Nothing,R], fins: Buffer[() => Unit]): R = {
     pipe match {
-      case Done(r)            => r;
-      case Delay(p)           => runPipe(p());
+      case Done(r)            => for(f <- fins) { f(); }; r;
+      case Delay(p, None)     => runPipe(p());
+      case Delay(p, Some(fin))=> runPipe(p(), fins += fin);
       case HaveOutput(o, _)   => o;
       case NeedInput(consume) => runPipe(consume(()));
     }

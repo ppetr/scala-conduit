@@ -19,7 +19,7 @@ final case class NeedInput[-I,+O,R](consume: I => Pipe[I,O,R])
     extends Pipe[I,O,R];
 final case class Done[-I,+O,R](result: R)
     extends Pipe[I,O,R];
-final case class Delay[I,O,R](delayed: () => Pipe[I,O,R], finalizer: Traversable[Pipe.Finalizer])
+final case class Delay[I,O,R](delayed: () => Pipe[I,O,R], finalizer: Pipe.RunOnce)
     extends Pipe[I,O,R];
 
 
@@ -30,12 +30,14 @@ object Pipe {
   def finish[R](result: => R): Pipe[Any,Nothing,R] = Done(result);
 
   def finalizer(fin: => Unit): Pipe[Any,Nothing,Unit]
-    = delay(finish, Some(() => fin));
+    = delay(finish, RunOnce(() => fin));
   def delay[I,O,R](p: => Pipe[I,O,R]): Pipe[I,O,R]
-    = delay(p, None);
+    = delay(p, RunOnce.Empty);
   def delay[I,O,R](p: => Pipe[I,O,R], finalizer: => Unit): Pipe[I,O,R]
-    = delay(p, Some(() => finalizer));
-  def delay[I,O,R](p: => Pipe[I,O,R], finalizer: Traversable[Finalizer]): Pipe[I,O,R]
+    = delay(p, RunOnce(() => finalizer));
+  def delay[I,O,R](p: => Pipe[I,O,R], finalizer: Iterable[Finalizer]): Pipe[I,O,R]
+    = delay(p, RunOnce(finalizer));
+  protected def delay[I,O,R](p: => Pipe[I,O,R], finalizer: RunOnce): Pipe[I,O,R]
     = Delay(() => p, finalizer);
 
   def request[I]: Pipe[I,Nothing,I] =
@@ -119,7 +121,7 @@ object Pipe {
 
 
   def runPipe[R](pipe: Pipe[Unit,Nothing,R]): R = {
-    val fins = new ArrayBuffer[() => Unit]
+    val fins = new ArrayBuffer[RunOnce]
     try {
       runPipe(pipe, fins);
     } finally {
@@ -130,10 +132,10 @@ object Pipe {
    * Note: Doesn't run the finalizers!
    */
   @tailrec
-  private def runPipe[R](pipe: Pipe[Unit,Nothing,R], fins: Buffer[() => Unit]): R = {
+  private def runPipe[R](pipe: Pipe[Unit,Nothing,R], fins: Buffer[RunOnce]): R = {
     pipe match {
       case Done(r)            => r;
-      case Delay(p, fin)      => runPipe(p(), fins ++= fin);
+      case Delay(p, fin)      => runPipe(p(), fins += fin);
       case HaveOutput(o, _)   => o;
       case NeedInput(consume) => runPipe(consume(()));
     }
@@ -162,16 +164,21 @@ object Pipe {
    * Executes the given finalizer only the first time {@link #apply()} is called.
    * This class is <em>not</em> synchronized.
    */
-  class RunOnce(actions: Finalizer*)
+  class RunOnce(actions: Iterator[Finalizer])
     extends Finalizer
   {
-    private var finished: Boolean = false;
+    def this(actions: Iterable[Finalizer]) { this(actions.iterator); }
 
     override def apply(): Unit = {
-      if (!finished) {
-        finished = true;
-        actions.foreach(_.apply());
-      }
+      while (actions.hasNext)
+        actions.next().apply();
     }
+  }
+  object RunOnce {
+    object Empty extends RunOnce(Iterator.empty);
+    def apply[A](actions: Iterable[Finalizer]): RunOnce =
+      if (actions.isEmpty) Empty else new RunOnce(actions);
+    def apply[A](actions: Finalizer*): RunOnce =
+      apply(actions : Iterable[Finalizer]);
   }
 }

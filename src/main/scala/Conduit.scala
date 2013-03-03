@@ -3,80 +3,46 @@ import collection.mutable.{ArrayBuffer, Buffer}
 
 sealed trait Pipe[-I,+O,+R]
 {
-  /*
-  def flatMap[R1](f: R => Pipe[I,O,R1]): Pipe[I,O,R1];
-  final def >>[R1](p: => Pipe[I,O,R1]): Pipe[I,O,R1] = flatMap(_ => p);
-  */
+  final def as[I1 <: I, O1 >: O]: Pipe[I1,O1,R] = this;
+  final def asI[I1 <: I]: Pipe[I1,O,R] = this;
+  final def asO[O1 >: O]: Pipe[I,O1,R] = this;
+
   final def map[R1](f: R => R1): Pipe[I,O,R1] = Pipe.map(this, f);
 
-  /*
-  final def >->[X](that: Pipe[O,X,R]) = Pipe.pipe(this, that);
-  final def <-<[X](that: Pipe[X,I,R]) = Pipe.pipe(that, this);
-  */
-
-  final def forever[Rx]: Pipe[I,O,Rx] = Pipe.forever(this);
+  final def forever: Pipe[I,O,Nothing] = Pipe.forever(this);
   final def finalizer(fin: => Unit): Pipe[I,O,R] = Pipe.delay(this, fin);
 }
 
 final case class HaveOutput[-I,+O,+R](output: O, next: () => Pipe[I,O,R])
-    extends Pipe[I,O,R]
-{
-/*
-  def flatMap[R1](f: R => Pipe[I,O,R1]): Pipe[I,O,R1] =
-    HaveOutput(output, () => { next().flatMap(f) });
-  def map[R1](f: R => R1): Pipe[I,O,R1] =
-    HaveOutput(output, () => { next().map(f) });
-  */
-}
-
+    extends Pipe[I,O,R];
 final case class NeedInput[-I,+O,R](consume: I => Pipe[I,O,R])
-    extends Pipe[I,O,R]
-{
-  /*
-  def flatMap[R1](f: R => Pipe[I,O,R1]): Pipe[I,O,R1] =
-    NeedInput(i => consume(i).flatMap(f));
-  def map[R1](f: R => R1): Pipe[I,O,R1] =
-    NeedInput(i => consume(i).map(f));
-  */
-}
-
+    extends Pipe[I,O,R];
 final case class Done[-I,+O,R](result: R)
-    extends Pipe[I,O,R]
-{
-  /*
-  def flatMap[R1](f: R => Pipe[I,O,R1]): Pipe[I,O,R1] =
-    f(result);
-  def map[R1](f: R => R1): Pipe[I,O,R1] =
-    Done(f(result));
-  */
-}
-
+    extends Pipe[I,O,R];
 final case class Delay[I,O,R](delayed: () => Pipe[I,O,R], finalizer: Option[() => Unit])
-    extends Pipe[I,O,R]
-{
-/*
-  def flatMap[R1](f: R => Pipe[I,O,R1]): Pipe[I,O,R1] =
-    Delay(() => delayed().flatMap(f), finalizer);
-  def map[R1](f: R => R1): Pipe[I,O,R1] =
-    Delay(() => delayed().map(f), finalizer);
-  */
-}
+    extends Pipe[I,O,R];
 
 
 object Pipe {
   def finish: Pipe[Any,Nothing,Unit] = finish(());
   def finish[R](result: => R): Pipe[Any,Nothing,R] = Done(result);
 
-  def finalizer(finalizer: => Unit): Pipe[Any,Nothing,Unit]
-    = Delay(() => finish, Some(() => finalizer));
+  def finalizer(fin: => Unit): Pipe[Any,Nothing,Unit]
+    = delay(finish, Some(() => fin));
   def delay[I,O,R](p: => Pipe[I,O,R]): Pipe[I,O,R]
-    = Delay(() => p, None);
+    = delay(p, None);
   def delay[I,O,R](p: => Pipe[I,O,R], finalizer: => Unit): Pipe[I,O,R]
-    = Delay(() => p, Some(() => finalizer));
+    = delay(p, Some(() => finalizer));
+  def delay[I,O,R](p: => Pipe[I,O,R], finalizer: Option[() => Unit]): Pipe[I,O,R]
+    = Delay(() => p, finalizer);
 
   def request[I]: Pipe[I,Nothing,I] =
-    NeedInput(i => Done(i));
+    request(i => Done(i));
+  def request[I,O,R](cont: I => Pipe[I,O,R]): Pipe[I,O,R] =
+    NeedInput(cont);
 
+  def respond[I,O,R](o: O, cont: => Pipe[I,O,R]): Pipe[I,O,R] =
+    HaveOutput(o, () => cont);
   def respond[O](o: O): Pipe[Any,O,Unit] =
     HaveOutput(o, () => { Done(()) })
 
@@ -93,8 +59,26 @@ object Pipe {
   def andThen[I,O,R](p: Pipe[I,O,_], q: => Pipe[I,O,R]): Pipe[I,O,R] =
     flatMap[I,O,Any,R](p, _ => q);
 
-  def forever[I,O,R](p: Pipe[I,O,_]): Pipe[I,O,R] =
+  def forever[I,O](p: Pipe[I,O,_]): Pipe[I,O,Nothing] =
     andThen(p, { forever(p) });
+
+  def until[I,O,A,B](f: A => Either[Pipe[I,O,A],B], start: A): Pipe[I,O,B] = {
+    def loop(x: A): Pipe[I,O,B] =
+      f(start) match {
+        case Left(pipe) => flatMap(pipe, loop _);
+        case Right(b)   => finish(b);
+      };
+    loop(start);
+  }
+  def until[I,O](pipe: => Option[Pipe[I,O,Any]]): Pipe[I,O,Unit] = {
+    def loop(): Pipe[I,O,Unit] =
+      pipe match {
+        case Some(pipe) => andThen(pipe, loop());
+        case None       => finish;
+      }
+    loop();
+  }
+
 
   /**
    * Composes two pipes, blocked on respond. This means that the second
@@ -136,6 +120,16 @@ object Pipe {
     }
   }
 
-  def idP[A,Any]: Pipe[A,A,Any] =
+  def idP[A]: Pipe[A,A,Any] =
     NeedInput(x => HaveOutput(x, () => { idP }));
+
+
+
+  implicit def pipeFlatMap[I,O,A](pipe: Pipe[I,O,A]) = new {
+    def flatMap[B](f: A => Pipe[I,O,B]) = Pipe.flatMap(pipe, f)
+    def >>[B](p: => Pipe[I,O,B]): Pipe[I,O,B] = flatMap(_ => p);
+
+    def >->[X](that: Pipe[O,X,A]) = Pipe.pipe(pipe, that);
+    def <-<[X](that: Pipe[X,I,A]) = Pipe.pipe(that, pipe);
+  }
 }

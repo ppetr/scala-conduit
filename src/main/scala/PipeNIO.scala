@@ -2,11 +2,9 @@ import java.io._
 import java.nio._
 import java.nio.channels._
 
-object PipeNIO extends App {
+object PipeNIO {
   import Pipe._;
-
-  def close[I,O,R](c: Closeable, pipe: => Pipe[I,O,R]): Pipe[I,O,R]
-    = delay(pipe, { c.close(); });
+  import PipeUtil._;
 
   def readChannel(buf: ByteBuffer, c: ReadableByteChannel): Pipe[Any,ByteBuffer,Unit] =
       close(c, until[Any,ByteBuffer]({
@@ -44,4 +42,38 @@ object PipeNIO extends App {
    */
   def leftovers[B <: Buffer]: Pipe[B,B,Nothing] =
     request((b: B) => until { if (b.hasRemaining()) Some(respond(b)) else None }).forever;
+
+  def list(dir: File): Pipe[Any,File,Unit] =
+    PipeUtil.fromIterable(
+      dir.listFiles(new FileFilter { def accept(f: File) = f.isFile; })
+    );
+
+  def listRec(dir: File): Pipe[Any,File,Unit] =
+  {
+    import PipeUtil._;
+    val all = dir.listFiles();
+    val files = all.toIterator.filter(_.isFile());
+    val dirs  = all.toIterator.filter(_.isDirectory());
+    fromIterator(files) >>
+      (fromIterator(dirs) >-> unfold(listRec _));
+  }
+
+
+  // -----------------------------------------------------------------
+
+  def main(argv: Array[String]) =
+  {
+    import PipeUtil._;
+
+    val log: Pipe[String,Nothing,Nothing] =
+      writeLines(new OutputStreamWriter(System.out));
+
+    val pipe =
+      listRec(new File("/home/p/projects/sosirecr/")) >->
+        filter(_.getName().endsWith(".java")) >->
+        readLines >->
+        log;
+
+    runPipe(pipe);
+  }
 }

@@ -51,17 +51,21 @@ object Pipe {
     HaveOutput(o, () => { Done(()) })
 
   //@tailrec
-  def flatMap[I,O,Ri,R](p: Pipe[I,O,Ri], f: Ri => Pipe[I,O,R]): Pipe[I,O,R] =
+  final def flatMap[I,O,Ri,R](p: Pipe[I,O,Ri], f: Ri => Pipe[I,O,R]): Pipe[I,O,R] =
+    flatMap(p, f, new ArrayBuffer);
+  private def flatMap[I,O,Ri,R](p: Pipe[I,O,Ri], f: Ri => Pipe[I,O,R], fins: Buffer[RunOnce]): Pipe[I,O,R] =
     p match {
-      case HaveOutput(out, next)      => HaveOutput(out, () => flatMap(next(), f));
-      case NeedInput(consume)         => NeedInput(x => flatMap(consume(x), f));
-      case Delay(delayed, fin)        => Delay(() => flatMap(delayed(), f), fin);
-      case Done(result)               => f(result);
+      case HaveOutput(out, next)      => HaveOutput(out, () => flatMap(next(), f, fins));
+      case NeedInput(consume)         => NeedInput(x => flatMap(consume(x), f, fins));
+      case Delay(delayed, fin)        => Delay(() => flatMap(delayed(), f, fins += fin), fin);
+      case Done(result)               => { RunOnce.run(fins); f(result); }
     }
+
+
   def map[I,O,Ri,R](p: Pipe[I,O,Ri], f: Ri => R): Pipe[I,O,R] =
-    flatMap[I,O,Ri,R](p, x => Done(f(x)));
+    flatMap[I,O,Ri,R](p, (x: Ri) => Done(f(x)));
   def andThen[I,O,R](p: Pipe[I,O,_], q: => Pipe[I,O,R]): Pipe[I,O,R] =
-    flatMap[I,O,Any,R](p, _ => q);
+    flatMap[I,O,Any,R](p, (_: Any) => q);
 
   def forever[I,O](p: Pipe[I,O,_]): Pipe[I,O,Nothing] =
     andThen(p, { forever(p) });
@@ -98,23 +102,25 @@ object Pipe {
    * <var>outp</var> pipe is executed until it needs input, then <var>inp</var>
    * is invoked.
    */
+  def pipe[I,X,O,R](i: Pipe[I,X,R], o: Pipe[X,O,R]): Pipe[I,O,R] =
+    pipeCont(i, o, Nil);
   @tailrec
-  def pipe[I,X,O,R](i: Pipe[I,X,R], o: Pipe[X,O,R]): Pipe[I,O,R] = {
+  def pipe[I,X,O,R](i: Pipe[I,X,R], o: Pipe[X,O,R], fins: List[RunOnce]): Pipe[I,O,R] = {
     val consume = o match {
-      case Done(r)              => return Done(r)
-      case Delay(o1, fin)       => return Delay(() => pipeCont(i, o1()), fin);
-      case HaveOutput(o, next)  => return HaveOutput(o, () => pipeCont(i, next()) )
+      case Done(r)              => RunOnce.run(fins); return Done(r)
+      case Delay(o1, fin)       => return Delay(() => pipeCont(i, o1(), fin :: fins), fin);
+      case HaveOutput(o, next)  => return HaveOutput(o, () => pipeCont(i, next(), fins) )
       case NeedInput(f)         => f
     }
     i match {
-      case HaveOutput(x, next)  => pipe(next(), consume(x));
-      case Delay(i1, fin)       => return Delay(() => pipeCont(i1(), o), fin);
-      case Done(r)              => return Done(r)
-      case NeedInput(c)         => return NeedInput((x: I) => pipeCont(c(x), o));
+      case HaveOutput(x, next)  => pipe(next(), consume(x), fins);
+      case Delay(i1, fin)       => return Delay(() => pipeCont(i1(), o, fin :: fins), fin);
+      case Done(r)              => RunOnce.run(fins); return Done(r)
+      case NeedInput(c)         => return NeedInput((x: I) => pipeCont(c(x), o, fins));
     }
   }
-  private final def pipeCont[I,X,O,R](inp: Pipe[I,X,R], outp: Pipe[X,O,R]): Pipe[I,O,R]
-    = pipe(inp, outp);
+  private final def pipeCont[I,X,O,R](inp: Pipe[I,X,R], outp: Pipe[X,O,R], fins: List[RunOnce]): Pipe[I,O,R]
+    = pipe(inp, outp, fins);
 
 
   def runPipe[R](pipe: Pipe[Unit,Nothing,R]): R = {
@@ -133,7 +139,7 @@ object Pipe {
     pipe match {
       case Done(r)            => r;
       case Delay(p, fin)      => runPipe(p(), fins += fin);
-      case HaveOutput(o, _)   => o;
+      case HaveOutput(o, _)   => o; // Never occurs - o is Nothing so it can be typed to anything.
       case NeedInput(consume) => runPipe(consume(()));
     }
   }
@@ -173,9 +179,12 @@ object Pipe {
   }
   object RunOnce {
     object Empty extends RunOnce(Iterator.empty);
-    def apply[A](actions: Iterable[Finalizer]): RunOnce =
+    def apply(actions: Iterable[Finalizer]): RunOnce =
       if (actions.isEmpty) Empty else new RunOnce(actions);
-    def apply[A](actions: Finalizer*): RunOnce =
+    def apply(actions: Finalizer*): RunOnce =
       apply(actions : Iterable[Finalizer]);
+
+    def run(fins: Iterable[RunOnce]) =
+      fins.foreach(_.apply);
   }
 }

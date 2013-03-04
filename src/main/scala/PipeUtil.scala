@@ -4,6 +4,9 @@ import scala.collection.generic.Growable
 object PipeUtil extends App {
   import Pipe._;
 
+  def close[I,O,R](c: Closeable, pipe: => Pipe[I,O,R]): Pipe[I,O,R]
+    = delay(pipe, { c.close(); System.err.println(">>> closed " + c); System.err.flush(); });
+
   def filter[A](p: A => Boolean): Pipe[A,A,Nothing] = {
     def loop: Pipe[A,A,Nothing] =
       request[A].asO[A].flatMap(x => if (p(x)) (respond(x).as[A,A] >> loop) else loop);
@@ -20,12 +23,17 @@ object PipeUtil extends App {
     });
   */
 
+  lazy val readLines: Pipe[File,String,Unit] =
+    unfold[File,String,Unit](f =>
+      readLines(new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8")))
+    );
+
   def readLines(r: BufferedReader): Pipe[Any,String,Unit] =
-    until[Any,String](Option(r.readLine).map(respond[String] _));
+    close(r, until[Any,String](Option(r.readLine).map(respond[String] _)));
 
   def writeLines(w: Writer): Pipe[String,Nothing,Nothing] =
-    request[String].map((x:String) => { w.write(x); w.write('\n'); })
-      .forever.finalizer({ w.close(); println("Closed output"); });
+    close(w, request[String].map((x:String) => { w.write(x); w.write('\n'); w.flush(); })
+      .forever);
  
 
   def fromSeq[A](values: A*): Pipe[Any,A,Unit] = fromIterable(values);

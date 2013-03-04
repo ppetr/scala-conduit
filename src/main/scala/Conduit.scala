@@ -152,9 +152,7 @@ object Pipe {
       fins.foreach(_.apply());
     }
   }
-  /**
-   * Note: Doesn't run the finalizers!
-   */
+
 
   def idP[A]: Pipe[A,A,Nothing] =
     NeedInput(x => HaveOutput(x, () => idP));

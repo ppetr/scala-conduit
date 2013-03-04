@@ -1,5 +1,5 @@
 import annotation.tailrec
-import collection.mutable.{ArrayBuffer, Buffer}
+import collection.mutable.{ArrayBuffer, Buffer, ArrayStack, Stack}
 
 sealed trait Pipe[-I,+O,+R]
 {
@@ -97,36 +97,57 @@ object Pipe {
   }
 
 
+
+  def pipe[I,X,O,R](i: Pipe[I,X,R], o: Pipe[X,O,R]): Pipe[I,O,R] =
+    pipe(i, o, mergeEither[R] _);
+  private def mergeEither[A](e: Either[A,A]): A =
+    e match {
+      case Left(x)  => x
+      case Right(x) => x
+    }
   /**
    * Composes two pipes, blocked on respond. This means that the second
    * <var>outp</var> pipe is executed until it needs input, then <var>inp</var>
    * is invoked.
    */
-  def pipe[I,X,O,R](i: Pipe[I,X,R], o: Pipe[X,O,R]): Pipe[I,O,R] =
-    pipeCont(i, o, Nil);
-  @tailrec
-  def pipe[I,X,O,R](i: Pipe[I,X,R], o: Pipe[X,O,R], fins: List[RunOnce]): Pipe[I,O,R] = {
-    val consume = o match {
-      case Done(r)              => RunOnce.run(fins); return Done(r)
-      case Delay(o1, fin)       => return Delay(() => pipeCont(i, o1(), fin :: fins), fin);
-      case HaveOutput(o, next)  => return HaveOutput(o, () => pipeCont(i, next(), fins) )
-      case NeedInput(f)         => f
+  def pipe[I,X,O,R1,R2,R](i: Pipe[I,X,R1], o: Pipe[X,O,R2], end: Either[R1,R2] => R): Pipe[I,O,R] = {
+    @tailrec
+    def step(i: Pipe[I,X,R1], o: Pipe[X,O,R2], fins: List[RunOnce]): Pipe[I,O,R] = {
+      val consume = o match {
+        case Done(r)              => RunOnce.run(fins); return Done(end(Right(r)))
+        case Delay(o1, fin)       => return Delay(() => stepCont(i, o1(), fin :: fins), fin);
+        case HaveOutput(o, next)  => return HaveOutput(o, () => stepCont(i, next(), fins) )
+        case NeedInput(f)         => f
+      }
+      i match {
+        case HaveOutput(x, next)  => step(next(), consume(x), fins);
+        case Delay(i1, fin)       => return Delay(() => stepCont(i1(), o, fin :: fins), fin);
+        case Done(r)              => RunOnce.run(fins); return Done(end(Left(r)))
+        case NeedInput(c)         => return NeedInput((x: I) => stepCont(c(x), o, fins));
+      }
     }
-    i match {
-      case HaveOutput(x, next)  => pipe(next(), consume(x), fins);
-      case Delay(i1, fin)       => return Delay(() => pipeCont(i1(), o, fin :: fins), fin);
-      case Done(r)              => RunOnce.run(fins); return Done(r)
-      case NeedInput(c)         => return NeedInput((x: I) => pipeCont(c(x), o, fins));
-    }
+    def stepCont(inp: Pipe[I,X,R1], outp: Pipe[X,O,R2], fins: List[RunOnce])
+      = step(inp, outp, fins);
+    stepCont(i, o, Nil);
   }
-  private final def pipeCont[I,X,O,R](inp: Pipe[I,X,R], outp: Pipe[X,O,R], fins: List[RunOnce]): Pipe[I,O,R]
-    = pipe(inp, outp, fins);
 
 
   def runPipe[R](pipe: Pipe[Unit,Nothing,R]): R = {
-    val fins = new ArrayBuffer[RunOnce]
+    @tailrec
+    def step[R](pipe: Pipe[Unit,Nothing,R], fins: ArrayStack[RunOnce]): R = {
+      pipe match {
+        case Done(r)            => r;
+        case Delay(p, fin)      => step(p(), fins += fin);
+        case HaveOutput(o, _)   => o; // Never occurs - o is Nothing so it can be typed to anything.
+        case NeedInput(consume) => step(consume(()), fins);
+      }
+    }
+    def stepCont[R](pipe: Pipe[Unit,Nothing,R], fins: ArrayStack[RunOnce]): R =
+      step(pipe, fins);
+
+    val fins = new ArrayStack[RunOnce];
     try {
-      runPipe(pipe, fins);
+      step(pipe, fins);
     } finally {
       fins.foreach(_.apply());
     }
@@ -134,15 +155,6 @@ object Pipe {
   /**
    * Note: Doesn't run the finalizers!
    */
-  @tailrec
-  private def runPipe[R](pipe: Pipe[Unit,Nothing,R], fins: Buffer[RunOnce]): R = {
-    pipe match {
-      case Done(r)            => r;
-      case Delay(p, fin)      => runPipe(p(), fins += fin);
-      case HaveOutput(o, _)   => o; // Never occurs - o is Nothing so it can be typed to anything.
-      case NeedInput(consume) => runPipe(consume(()));
-    }
-  }
 
   def idP[A]: Pipe[A,A,Nothing] =
     NeedInput(x => HaveOutput(x, () => idP));

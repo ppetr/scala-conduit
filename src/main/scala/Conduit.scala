@@ -98,26 +98,23 @@ object Pipe {
    * <var>outp</var> pipe is executed until it needs input, then <var>inp</var>
    * is invoked.
    */
-  def pipe[I,X,O,R](inp: Pipe[I,X,R], outp: Pipe[X,O,R]): Pipe[I,O,R] = {
-    var i = inp;
-    var o = outp;
-    while (true) {
-      val consume = o match {
-        case Done(r)              => return Done(r)
-        case Delay(o1, fin)       => return Delay(() => pipe(i, o1()), fin);
-        case HaveOutput(o, next)  => return HaveOutput(o, () => { pipe(i, next()) } )
-        case NeedInput(f)         => f
-      }
-      i match {
-        case HaveOutput(x, next)  => { i = next(); o = consume(x); }
-        case Delay(i1, fin)       => return Delay(() => pipe(i1(), o), fin);
-        case Done(r)              => return Done(r)
-        case NeedInput(c)         => return NeedInput((x: I) => pipe(c(x), o));
-      }
+  @tailrec
+  def pipe[I,X,O,R](i: Pipe[I,X,R], o: Pipe[X,O,R]): Pipe[I,O,R] = {
+    val consume = o match {
+      case Done(r)              => return Done(r)
+      case Delay(o1, fin)       => return Delay(() => pipeCont(i, o1()), fin);
+      case HaveOutput(o, next)  => return HaveOutput(o, () => pipeCont(i, next()) )
+      case NeedInput(f)         => f
     }
-    // Just to satisfy the compiler, we never get here.
-    throw new IllegalStateException();
+    i match {
+      case HaveOutput(x, next)  => pipe(next(), consume(x));
+      case Delay(i1, fin)       => return Delay(() => pipeCont(i1(), o), fin);
+      case Done(r)              => return Done(r)
+      case NeedInput(c)         => return NeedInput((x: I) => pipeCont(c(x), o));
+    }
   }
+  private final def pipeCont[I,X,O,R](inp: Pipe[I,X,R], outp: Pipe[X,O,R]): Pipe[I,O,R]
+    = pipe(inp, outp);
 
 
   def runPipe[R](pipe: Pipe[Unit,Nothing,R]): R = {

@@ -27,7 +27,7 @@ object Pipe {
   type Finalizer = () => Unit;
 
   def finish: Pipe[Any,Nothing,Unit] = finish(());
-  def finish[R](result: => R): Pipe[Any,Nothing,R] = Done(result);
+  def finish[R](result: R): Pipe[Any,Nothing,R] = Done(result);
 
   def finalizer(fin: => Unit): Pipe[Any,Nothing,Unit]
     = delay(finish, RunOnce(() => fin));

@@ -138,11 +138,11 @@ object Pipe {
     }
   }
 
-  def idP[A]: Pipe[A,A,Any] =
+  def idP[A]: Pipe[A,A,Nothing] =
     NeedInput(x => HaveOutput(x, () => idP));
 
-  def arrP[I,O](f: I => O): Pipe[I,O,Any] = {
-    def loop(): Pipe[I,O,Any] =
+  def arrP[I,O](f: I => O): Pipe[I,O,Nothing] = {
+    def loop(): Pipe[I,O,Nothing] =
       NeedInput(x => HaveOutput(f(x), loop _));
     loop();
   }

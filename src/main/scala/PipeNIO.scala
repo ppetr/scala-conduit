@@ -69,9 +69,9 @@ object PipeNIO {
       writeLines(new OutputStreamWriter(System.out));
 
     val pipe =
-      listRec(new File("/home/p/projects/sosirecr/")) >->
-        filter(_.getName().endsWith(".java")) >->
-        readLines >->
+      listRec(new File(".")) >->
+        filter(_.getName().endsWith(".scala")) >->
+        readLinesFile >->
         log;
 
     runPipe(pipe);

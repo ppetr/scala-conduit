@@ -26,7 +26,7 @@ final case class Delay[-I,+O,+R](delayed: () => Pipe[I,O,R], finalizer: Pipe.Run
 object Pipe {
   type Finalizer = () => Unit;
 
-  def finish: Pipe[Any,Nothing,Unit] = finish(());
+  val finish: Pipe[Any,Nothing,Unit] = finish(());
   def finish[R](result: R): Pipe[Any,Nothing,R] = Done(result);
 
   def finalizer(fin: => Unit): Pipe[Any,Nothing,Unit]

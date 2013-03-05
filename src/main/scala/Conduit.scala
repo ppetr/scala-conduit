@@ -17,8 +17,8 @@ final case class HaveOutput[-I,+O,+R](output: O, next: () => Pipe[I,O,R])
     extends Pipe[I,O,R];
 final case class NeedInput[-I,+O,+R](consume: I => Pipe[I,O,R])
     extends Pipe[I,O,R];
-final case class Done[-I,+O,+R](result: R)
-    extends Pipe[I,O,R];
+final case class Done[+R](result: R)
+    extends Pipe[Any,Nothing,R];
 final case class Delay[-I,+O,+R](delayed: () => Pipe[I,O,R], finalizer: Pipe.RunOnce)
     extends Pipe[I,O,R];
 

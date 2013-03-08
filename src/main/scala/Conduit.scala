@@ -1,6 +1,6 @@
 import annotation.tailrec
 import collection.mutable.{ArrayBuffer, Buffer, ArrayStack, Stack, Queue}
-import util.control.Exception._
+import util.control.Exception
 
 sealed trait Pipe[-I,+O,+R]
 {
@@ -23,7 +23,7 @@ private final case class NeedInput[-I,+O,+R](consume: I => Pipe[I,O,R])
 private final case class Done[+R](result: R)
   extends PipeCore[Any,Nothing,R];
 
-private final case class Bind[-I,+O,+R,S](first: () => Pipe[I,O,S], catching: Pipe.Finalizer[S], then: S => Pipe[I,O,R])
+private final case class Bind[-I,+O,+R,S](first: () => Pipe[I,O,S], catching: Pipe.Catcher[S], then: S => Pipe[I,O,R])
   extends Pipe[I,O,R];
 private final case class Fuse[-I,X,+O,+R,Rr,Rl](up: Pipe[I,X,Rl], down: Pipe[X,O,Rr], merge: Either[Rl,Rr] => R)
   extends Pipe[I,O,R];
@@ -32,15 +32,29 @@ private final case class Fuse[-I,X,+O,+R,Rr,Rl](up: Pipe[I,X,Rl], down: Pipe[X,O
 
 
 object Pipe {
-  type Finalizer[+R] = Catch[R];
+  type Catcher[+A] = Exception.Catcher[A];
+  private object Catcher {
+    def map[A,B](f: A => B, c: Catcher[A]): Catcher[B] =
+      c andThen f;
+
+    val empty: Catcher[Nothing] = new PartialFunction[Any,Nothing] {
+      override def isDefinedAt(x: Any): Boolean = false;
+      override def apply(x: Any): Nothing = throw new RuntimeException("undefined");
+    };
+    @inline
+    def protect[R](catching: Catcher[R], body: => R): R =
+      body; // TODO catching(body);
+  }
 
   @inline
   protected val nextDone: () => Pipe[Any,Nothing,Unit] = () => finish;
+  /*
   protected implicit def toFunStrict[A](body: A): () => A =
     () => body;
   protected implicit def toFunLazy[A](body: => A): () => A =
     () => body;
-  protected def toFun1[A](body: => A): Any => A =
+  */
+  protected def const[A](body: => A): Any => A =
     (_) => body;
 
   @inline
@@ -49,14 +63,15 @@ object Pipe {
   def finish[R](result: R): Pipe[Any,Nothing,R] = Done(result);
 
   @inline
-  def catching[I,O,R](catching: Catch[R], inner: => Pipe[I,O,R]): Pipe[I,O,R] =
-    Bind(inner, finalizer(catching), (x: R) => Done(x));
+  def catching[I,O,R](catching: Catcher[R], inner: => Pipe[I,O,R]): Pipe[I,O,R] =
+    Bind(() => inner, catching, (x: R) => Done(x));
   @inline
   def finalizer[I,O,R](fin: => Unit, inner: => Pipe[I,O,R]): Pipe[I,O,R] =
-    finalizer(ultimately(fin), inner);
+    // TODO
+    inner;
   @inline
   def delay[I,O,R](p: => Pipe[I,O,R]): Pipe[I,O,R] =
-    Bind(finish, emptyFinalizer, toFun1(p));
+    Bind(() => finish, Catcher.empty, const(p));
 
   @inline
   def request[I]: Pipe[I,Nothing,I] =
@@ -67,10 +82,10 @@ object Pipe {
 
   @inline
   def respond[I,O,R](o: O, cont: => Pipe[I,O,R]): Pipe[I,O,R] =
-    HaveOutput(o, cont);
+    HaveOutput(o, () => cont);
   @inline
   def respond[O](o: O): Pipe[Any,O,Unit] =
-    HaveOutput(o, finish);
+    HaveOutput(o, () => finish);
 
 /*
   @inline
@@ -83,7 +98,7 @@ object Pipe {
 
   @inline
   def flatMap[I,O,R,S](pipe: Pipe[I,O,S], f: S => Pipe[I,O,R]): Pipe[I,O,R] =
-    Bind(pipe, emptyFinalizer, f);
+    Bind(() => pipe, Catcher.empty, f);
 
   @inline
   def map[I,O,S,R](pipe: Pipe[I,O,S], f: S => R): Pipe[I,O,R] =
@@ -91,7 +106,7 @@ object Pipe {
 
 
   def andThen[I,O,R](first: Pipe[I,O,_], then: => Pipe[I,O,R]): Pipe[I,O,R] =
-    flatMap[I,O,R,Any](first, toFun1(then));
+    flatMap[I,O,R,Any](first, const(then));
 
   def forever[I,O](p: Pipe[I,O,_]): Pipe[I,O,Nothing] =
     andThen(p, { forever(p) });
@@ -113,12 +128,27 @@ object Pipe {
     delay { loop() }
   }
 
+  @inline
+  def blockInput[I,O,R](ifRequest: Pipe[I,O,R], p: Pipe[Nothing,O,R]): Pipe[I,O,R] =
+    flatMap(pipeE(finish, p), (r: Either[Unit,R]) => r match {
+      case Left(_)  => ifRequest;
+      case Right(r) => finish(r);
+    });
+  @inline
+  def blockInput[O,R](ifRequest: R, p: Pipe[Nothing,O,R]): Pipe[Any,O,R] =
+    pipe(finish(ifRequest), p);
+  @inline
+  def blockInput[O,R](p: Pipe[Nothing,O,R]): Pipe[Any,O,Any] =
+    pipe(finish, p);
+ 
+
   /**
    * The pipes returned by <code>f</code> should not request any input. If they do,
    * they're terminated.
    */
+  @inline
   def unfold[I,O,A](f: I => Pipe[Any,O,A]): Pipe[I,O,Nothing] =
-    forever(pipe(finish, request[I,O,A](f)));
+    forever(request[I,O,Any](i => blockInput(f(i))));
 
   def repeat[O](produce: => O): Pipe[Any,O,Nothing] = {
     def loop(): Pipe[Any,O,Nothing]
@@ -157,59 +187,50 @@ object Pipe {
   def runPipe[R](pipe: Pipe[Unit,Nothing,R]): R = {
     @tailrec
     def step[R](pipe: Pipe[Unit,Nothing,R]): R = {
-      pipe match {
+      stepPipe(pipe) match {
         case Done(r)               => r;
-        case Bind(next, fin, then) => step(then(stepCont(next(), fin)));
         case HaveOutput(o, _)      => o; // Never occurs - o is Nothing so it can be typed to anything.
         case NeedInput(consume)    => step(consume(()));
-        //case Leftover(_, next)     => step(next());
-        //case Fuse(up, down, end)   => end(runFuse(up, down));
       }
     }
-    def stepCont[R](pipe: Pipe[Unit,Nothing,R], fin: Finalizer[R]): R =
-      protect(fin, step(pipe));
-
     step(pipe);
   }
 
-  protected val emptyFinalizer: Finalizer[Nothing] = noCatch;
-  @inline
-  protected def protect[R](catching: Finalizer[R], body: => R): R =
-    catching(body);
-  @inline
-  protected def finalizer[R](c: Catch[R]): Finalizer[R] = c;
-  /*
-    catching match {
-      case None     => body;
-      case Some(c)  => c(body);
+
+  @tailrec
+  private def stepPipe[I,O,R](pipe: Pipe[I,O,R]): PipeCore[I,O,R] =
+    pipe match {
+      case p@Done(_)              => p;
+      case p@NeedInput(_)         => p;
+      case p@HaveOutput(o,_)      => p;
+      case Fuse(up, down, end)    => stepFuse(up, down, end);
+      case Bind(next, fin, then)  => stepPipe(stepBind(next, fin, then));
     }
-    */
 
-  private sealed trait RunPipe[-I,+O,+R];
-  private final case class RunDone[+R](result: R)
-    extends RunPipe[Any,Nothing,R];
-  private final case class RunOut[-I,+O,+R](output: O, next: () => Pipe[I,O,R])
-    extends RunPipe[I,O,R];
-  private final case class RunIn[-I,+O,+R](next: I => Pipe[I,O,R])
-    extends RunPipe[I,O,R];
-
-  private def stepPipe[I,O,R](pipe: Pipe[I,O,R]): RunPipe[I,O,R] = {
-    // TODO @tailrec
-    def step[R](pipe: Pipe[I,O,R], lo: Queue[I]): RunPipe[I,O,R] =
-      pipe match {
-        case Done(r)               => RunDone(r);
-        case NeedInput(consume)    => RunIn((x: I) => consume(x));
-        case HaveOutput(o, next)   => RunOut(o, next);
-        //case Leftover(i: I, next)  => step(next(), lo += i);
-        /*
-        case Bind(next, fin, then) => step(then(stepCont(next(), fin)));
-        case Leftover(_, next)     => step(next());
-        case Fuse(up, down, end)   => end(runFuse(up, down));
-        */
+  private def stepBind[I,O,R,S](pipe: () => Pipe[I,O,S], fin: Catcher[S], then: S => Pipe[I,O,R]): Pipe[I,O,R] = {
+    Catcher.protect(Catcher.map(then, fin), {
+      stepPipe(pipe()) match {
+        case Done(s)              => then(s);
+        case NeedInput(cons)      => NeedInput(i => stepBind(() => cons(i), fin, then));
+        case HaveOutput(o, next)  => HaveOutput(o, () => stepBind(next, fin, then));
       }
-    def stepCont[R](pipe: Pipe[I,O,R], lo: Queue[I]): RunPipe[I,O,R] =
-      step(pipe, lo);
-    return step(pipe, new Queue[I]);
+    })
+  }
+
+  private def stepFuse[I,X,O,Ru,Rd,R](up: Pipe[I,X,Ru], down: Pipe[X,O,Rd], end: Either[Ru,Rd] => R): PipeCore[I,O,R] = {
+    @tailrec
+    def step(up: Pipe[I,X,Ru], down: Pipe[X,O,Rd]): PipeCore[I,O,R] =
+      stepPipe(down) match {
+        case Done(r)              => Done(end(Right(r)));
+        case HaveOutput(o, next)  => HaveOutput(o, () => stepFuse(up, next(), end));
+        case NeedInput(consO)     =>
+          stepPipe(up) match {
+            case Done(r)              => Done(end(Left(r)));
+            case HaveOutput(x, next)  => step(next(), consO(x));
+            case NeedInput(consI)     => NeedInput((i: I) => stepFuse(consI(i), down, end));
+          }
+        }
+    step(up, down);
   }
 
 //    pipe(i, o, mergeEither[R] _);
@@ -265,27 +286,30 @@ object Pipe {
 //      fins.foreach(_.apply());
 //    }
 //  }
-//
-//
-//
-//
-//  implicit def pipeFlatMap[I,O,A](pipe: Pipe[I,O,A]) = new {
-//    def flatMap[B](f: A => Pipe[I,O,B]) = Pipe.flatMap(pipe, f)
-//    def >>[B](p: => Pipe[I,O,B]): Pipe[I,O,B] = flatMap(_ => p);
-//
-//    def >->[X](that: Pipe[O,X,A]) = Pipe.pipe(pipe, that);
-//    def <-<[X](that: Pipe[X,I,A]) = Pipe.pipe(that, pipe);
-//  }
-//
-//
+
+
+
+
+  implicit def pipeFlatMap[I,O,A](pipe: Pipe[I,O,A]) = new {
+    @inline def flatMap[B](f: A => Pipe[I,O,B]) = Pipe.flatMap(pipe, f)
+    @inline def map[B](f: A => B) = flatMap((r: A) => finish(f(r)));
+    @inline def >>[B](p: => Pipe[I,O,B]): Pipe[I,O,B] = flatMap(_ => p);
+
+    @inline def >->[X](that: Pipe[O,X,A]) = Pipe.pipe(pipe, that);
+    @inline def <-<[X](that: Pipe[X,I,A]) = Pipe.pipe(that, pipe);
+
+    @inline def forever: Pipe[I,O,Nothing] = Pipe.forever(pipe);
+  }
+
+
 //  /**
 //   * Executes the given finalizer only the first time {@link #apply()} is called.
 //   * This class is <em>not</em> synchronized.
 //   */
-//  class RunOnce(actions: Iterator[Finalizer])
-//    extends Finalizer
+//  class RunOnce(actions: Iterator[Catcher])
+//    extends Catcher
 //  {
-//    def this(actions: Iterable[Finalizer]) { this(actions.iterator); }
+//    def this(actions: Iterable[Catcher]) { this(actions.iterator); }
 //
 //    override def apply(): Unit = {
 //      while (actions.hasNext)
@@ -294,10 +318,10 @@ object Pipe {
 //  }
 //  object RunOnce {
 //    object Empty extends RunOnce(Iterator.empty);
-//    def apply(actions: Iterable[Finalizer]): RunOnce =
+//    def apply(actions: Iterable[Catcher]): RunOnce =
 //      if (actions.isEmpty) Empty else new RunOnce(actions);
-//    def apply(actions: Finalizer*): RunOnce =
-//      apply(actions : Iterable[Finalizer]);
+//    def apply(actions: Catcher*): RunOnce =
+//      apply(actions : Iterable[Catcher]);
 //
 //    def run(fins: Iterable[RunOnce]) =
 //      fins.foreach(_.apply);

@@ -9,7 +9,7 @@ object PipeUtil {
   }
 
   def close[I,O,R](c: Closeable, pipe: => Pipe[I,O,R]): Pipe[I,O,R]
-    = delay(pipe, { c.close(); System.err.println(">>> closed " + c); System.err.flush(); });
+    = finalizer({ c.close(); System.err.println(">>> closed " + c); System.err.flush(); }, pipe);
 
   def filter[A](p: A => Boolean): Pipe[A,A,Nothing] = {
     def loop: Pipe[A,A,Nothing] =
@@ -28,7 +28,7 @@ object PipeUtil {
   */
 
   lazy val readLinesFile: Pipe[File,String,Nothing] =
-    pipe(arrP((f: File) => new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8"))), readLines);
+    pipe(mapP((f: File) => new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8"))), readLines);
     //arrP((f: File) => new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8"))) >-> readLines;
   lazy val readLines: Pipe[BufferedReader,String,Nothing] =
     unfold[BufferedReader,String,Unit](readLines _);
@@ -37,8 +37,7 @@ object PipeUtil {
     close(r, until[Any,String](Option(r.readLine).map(respond[String] _)));
 
   def writeLines(w: Writer): Pipe[String,Nothing,Nothing] =
-    close(w, request[String].map((x:String) => { w.write(x); w.write('\n'); w.flush(); })
-      .forever);
+    close(w, forever(request((x: String) => { w.write(x); w.write('\n'); w.flush(); finish; })));
  
 
   def fromSeq[A](values: A*): Pipe[Any,A,Unit] = fromIterable(values);

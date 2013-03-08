@@ -23,7 +23,6 @@ sealed trait Pipe[-I,+O,+R]
  * primitives, covered by <code>PipeCode</code>. It only allows input, output,
  * delay and producing the final result.
  */
- * A trait for the core pipe
 private trait PipeCore[-I,+O,+R] extends Pipe[I,O,R] {
   def finalizer: Pipe.Finalizer;
 }

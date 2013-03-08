@@ -2,6 +2,10 @@ import annotation.tailrec
 import collection.mutable.{ArrayBuffer, Buffer, ArrayStack, Stack, Queue}
 import util.control.Exception
 
+/**
+ * Accepts input elements of type <code>I</code>, produces output elements of
+ * type <code>O</code> and when finished, returns <code>R</code>.
+ */
 sealed trait Pipe[-I,+O,+R]
 {
   final def as[I1 <: I, O1 >: O]: Pipe[I1,O1,R] = this;
@@ -14,6 +18,12 @@ sealed trait Pipe[-I,+O,+R]
   //final def finalizer(fin: => Unit): Pipe[I,O,R] = Pipe.delay(this, fin);
 }
 
+/**
+ * When a pipe is run, it's converted into a smaller, more specific set of
+ * primitives, covered by <code>PipeCode</code>. It only allows input, output,
+ * delay and producing the final result.
+ */
+ * A trait for the core pipe
 private trait PipeCore[-I,+O,+R] extends Pipe[I,O,R] {
   def finalizer: Pipe.Finalizer;
 }
@@ -28,6 +38,10 @@ private final case class Done[+R](result: R)
   }
 private final case class Delay[-I,+O,+R](next: () => Pipe[I,O,R], override val finalizer: Pipe.Finalizer)
   extends PipeCore[I,O,R];
+
+// We also have two more primitives that represent two core operations on
+// pipes: binding and fusing. They are converted into the above ones when a
+// pipe is run.
 
 private final case class Bind[-I,+O,+R,S](first: Pipe[I,O,S], then: S => Pipe[I,O,R], finalizer: Pipe.Finalizer)
   extends Pipe[I,O,R];
@@ -101,10 +115,24 @@ object Pipe {
   protected def const[A](body: => A): Any => A =
     (_) => body;
 
+  /**
+   * Returns a pipe that does nothing and returns <code>()</code>.
+   */
   @inline
   val finish: Pipe[Any,Nothing,Unit] = finish(());
+  /**
+   * Returns a pipe that just returns the given result.
+   */
   @inline
   def finish[R](result: R): Pipe[Any,Nothing,R] = Done(result);
+  /**
+   * Returns a pipe that runs the given finalizer and then returns the given result.
+   */
+  @inline
+  def finish[R](result: R, fin: Finalizer): Pipe[Any,Nothing,R] = {
+    Finalizer.run(fin);
+    Done(result);
+  }
 
   @inline
   def delay[I,O,R](inner: => Pipe[I,O,R])(implicit finalizer: Finalizer = Finalizer.empty): Pipe[I,O,R] =

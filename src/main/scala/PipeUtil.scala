@@ -4,14 +4,15 @@ import scala.collection.generic.Growable
 object PipeUtil {
   import Pipe._;
 
+  implicit def closeFin(implicit c: Closeable): Finalizer =
+    Finalizer { System.err.println("Closing " + c); c.close() }
+
   implicit def implicitAsPipe[O](value: O) = new {
-    def asPipe: Pipe[Any,O,Unit] = respond[O](value);
+    def asPipe: Pipe[Any,O,Unit] = respond[O](value)(Finalizer.empty);
   }
 
-  def close[I,O,R](c: Closeable, pipe: => Pipe[I,O,R]): Pipe[I,O,R]
-    = finalizer({ c.close(); System.err.println(">>> closed " + c); System.err.flush(); }, pipe);
-
   def filter[A](p: A => Boolean): Pipe[A,A,Nothing] = {
+    import Finalizer.empty
     def loop: Pipe[A,A,Nothing] =
       request[A].asO[A].flatMap(x => if (p(x)) (respond(x).as[A,A] >> loop) else loop);
     loop;
@@ -27,24 +28,32 @@ object PipeUtil {
     });
   */
 
-  lazy val readLinesFile: Pipe[File,String,Nothing] =
+  lazy val readLinesFile: Pipe[File,String,Nothing] = {
+    import Finalizer.empty
     pipe(mapP((f: File) => new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8"))), readLines);
+  }
     //arrP((f: File) => new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8"))) >-> readLines;
   lazy val readLines: Pipe[BufferedReader,String,Nothing] =
     unfold[BufferedReader,String,Unit](readLines _);
 
-  def readLines(r: BufferedReader): Pipe[Any,String,Unit] =
-    close(r, until[Any,String](Option(r.readLine).map(respond[String] _)));
+  def readLines(r: BufferedReader): Pipe[Any,String,Unit] = {
+    implicit val fin = closeFin(r);
+    until[Any,String](Option(r.readLine).map(respond[String] _));
+  }
 
-  def writeLines(w: Writer): Pipe[String,Nothing,Nothing] =
-    close(w, forever(request((x: String) => { w.write(x); w.write('\n'); w.flush(); finish; })));
+  def writeLines(w: Writer): Pipe[String,Nothing,Nothing] = {
+    implicit val fin = closeFin(w)
+    forever(request((x: String) => { w.write(x); w.write('\n'); w.flush(); finish; }));
+  }
  
 
   def fromSeq[A](values: A*): Pipe[Any,A,Unit] = fromIterable(values);
   def fromIterable[A](i : Iterable[A]): Pipe[Any,A,Unit]
     = fromIterator(i.iterator);
-  def fromIterator[A](i : Iterator[A]): Pipe[Any,A,Unit] =
+  def fromIterator[A](i : Iterator[A]): Pipe[Any,A,Unit] = {
+    import Finalizer.empty
     until(if (i.hasNext) Some(respond[A](i.next())) else None);
+  }
 
   def fromIterable[A]: Pipe[Iterable[A],A,Any] =
     unfold[Iterable[A],A,Unit](i => fromIterable(i));
@@ -71,29 +80,35 @@ object PipeUtil {
 
   // -----------------------------------------------------------------
   def main(argv: Array[String]) {
-   {
-    val child = Runtime.getRuntime().exec(Array(
-        "/bin/sh", "-c", "find /home/p/projects/sosirecr/ -name '*java' -type f | xargs cat" ));
-    val is = child.getInputStream();
-    //val i = readLines(new BufferedReader(new InputStreamReader(is)));
-    val i = new BufferedReader(new InputStreamReader(is)).asPipe >-> readLines;
+    import Finalizer.empty
+    try {
+      if (true)
+      {
+        val child = Runtime.getRuntime().exec(Array(
+            "/bin/sh", "-c", "find /home/p/projects/sosirecr/ -name '*java' -type f | xargs cat" ));
+        val is = child.getInputStream();
+        //val i = readLines(new BufferedReader(new InputStreamReader(is)));
+        val i = new BufferedReader(new InputStreamReader(is)).asPipe >-> readLines;
 
-    val f = filter[String](s => s.length < 30);
-    val o = writeLines(new OutputStreamWriter(System.out));
-    runPipe(i >-> f >-> o);
+        val f = filter[String](s => s.length < 30);
+        val o = writeLines(new OutputStreamWriter(System.out));
+        runPipe(i >-> f >-> o);
 
-    System.err.println("Process terminated.");
-    child.waitFor();
-    System.err.println("Exit status: " + child.exitValue());
-    //System.exit(0);
-   }
-   {
-    val i = List("abc", "efg4", "123").toSource;
-    val f = filter[String](s => s.length <= 3);
-    val o = writeLines(new OutputStreamWriter(System.err));
-    runPipe(i >-> f >-> o);
-    System.err.println("Finished.");
-    System.exit(0);
-   }
+        System.err.println("Process terminated.");
+        child.waitFor();
+        System.err.println("Exit status: " + child.exitValue());
+        //System.exit(0);
+      } else
+      {
+        val i = List("abc", "efg4", "123").toSource;
+        val f = filter[String](s => s.length <= 3);
+        val o = writeLines(new OutputStreamWriter(System.out));
+        runPipe(i >-> f >-> o);
+        System.err.println("Finished.");
+        System.exit(0);
+      }
+    } catch {
+      case (ex: Exception) => ex.printStackTrace;
+    }
   }
 }

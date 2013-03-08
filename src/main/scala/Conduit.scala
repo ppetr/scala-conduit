@@ -66,12 +66,36 @@ object Pipe {
       log(Level.SEVERE, msg, ex);
   }
 
-  type Finalizer = Seq[Option[Throwable] => Unit];
-  object Finalizer {
-    implicit val empty: Finalizer = Seq.empty;
+  class Finalizer private (private val actions: Seq[Option[Throwable] => Unit]) {
+    def isEmpty = actions.isEmpty;
 
-    def apply(fin: => Unit): Finalizer = Seq((_) => fin);
-    def apply(fin: Option[Throwable] => Unit): Finalizer = Seq(fin);
+    protected def run(th: Option[Throwable]): Unit =
+      actions.foreach(Finalizer.runQuietly(_, th));
+
+    /**
+     * If an exception occurs when running <var>body</var>, run the finalizer.
+     */
+    def protect[R](body: => R): R =
+      if (isEmpty) body
+      else
+        try { body }
+        catch {
+          case (ex: Exception) => { run(Some(ex)); throw ex; }
+          case (ex: Throwable) => {
+            Log.error("Serious Error! Finalizers may fail.", ex);
+            run(Some(ex));
+            throw ex;
+          }
+        }
+
+    def ++(that: Finalizer): Finalizer =
+      new Finalizer(this.actions ++ that.actions);
+  }
+  object Finalizer {
+    implicit val empty: Finalizer = new Finalizer(Seq.empty);
+
+    def apply(fin: => Unit): Finalizer = new Finalizer(Seq((_) => fin));
+    def apply(fin: Option[Throwable] => Unit): Finalizer = new Finalizer(Seq(fin));
 
     protected def runQuietly(f: Option[Throwable] => Unit, th: Option[Throwable] = None) =
       try { f(th) }
@@ -79,29 +103,8 @@ object Pipe {
         case (ex: Exception) => Log.warn("Exception in a finalizer", ex);
         case (ex: Throwable) => Log.error("Error in a finalizer", ex);
       }
-
-    protected def run(fin: Finalizer, th: Option[Throwable]): Unit =
-      fin.foreach(runQuietly(_, th));
     def run(implicit fin: Finalizer): Unit =
-      run(fin, None);
-
-    @inline
-    def protect[R](fin: Finalizer, body: => R): R =
-      if (fin.isEmpty) body
-      else
-        try { body }
-        catch {
-          case (ex: Exception) => { run(fin, Some(ex)); throw ex; }
-          case (ex: Throwable) => {
-            Log.error("Serious Error! Finalizers may fail.", ex);
-            run(fin, Some(ex));
-            throw ex;
-          }
-        }
-
-    @inline
-    def plus(fin1: Finalizer, fin2: Finalizer): Finalizer =
-      fin1 ++ fin2;
+      fin.run(None);
   }
 
   type Catcher[+A] = Exception.Catcher[A];
@@ -272,8 +275,8 @@ object Pipe {
       stepPipe(pipe) match {
         case Done(r)                  => r;
         case HaveOutput(o, _, _)      => o; // Never occurs - o is Nothing so it can be typed to anything.
-        case NeedInput(consume, fin)  => step(protect(fin, { consume(()) }));
-        case Delay(next, fin)         => step(protect(fin, { next() }));
+        case NeedInput(consume, fin)  => step(fin.protect({ consume(()) }));
+        case Delay(next, fin)         => step(fin.protect({ next() }));
       }
     }
     step(pipe);
@@ -302,7 +305,7 @@ object Pipe {
     import Finalizer._
     def step(up: Pipe[I,X,Ru], down: Pipe[X,O,Rd], finUp: Finalizer): PipeCore[I,O,R] = {
       val downCore = stepPipe(down);
-      val finPlus = plus(finUp, downCore.finalizer);
+      val finPlus = finUp ++ downCore.finalizer;
       downCore match {
         case Done(r)    => Delay(() => { run(finPlus); Done(end(Right(r))) }, empty)
         case Delay(next, _)
@@ -312,7 +315,7 @@ object Pipe {
         case NeedInput(consO, finDown) => {
           val upCore = stepPipe(up);
           val finUp = upCore.finalizer;
-          val finPlus = plus(finUp, finDown)
+          val finPlus = finUp ++ finDown;
           upCore match {
             case Done(r)  => Delay(() => { run(finPlus); Done(end(Left(r))) }, empty)
             case Delay(next, _)

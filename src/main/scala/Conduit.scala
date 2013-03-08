@@ -56,24 +56,34 @@ object Pipe {
     // TODO
     val logger = Logger.getLogger(Pipe.getClass().getName());
 
+    private def log(level: Level, msg: => String, ex: Throwable = null) =
+      if (logger.isLoggable(level))
+        logger.log(level, msg, ex);
+
+    def warn(msg: => String, ex: Throwable = null) =
+      log(Level.WARNING, msg, ex);
     def error(msg: => String, ex: Throwable = null) =
-      if (logger.isLoggable(Level.WARNING))
-        logger.log(Level.WARNING, msg, ex);
+      log(Level.SEVERE, msg, ex);
   }
 
-  type Finalizer = Seq[() => Unit];
+  type Finalizer = Seq[Option[Throwable] => Unit];
   object Finalizer {
     implicit val empty: Finalizer = Seq.empty;
 
-    def apply(fin: => Unit): Finalizer = Seq(() => fin);
+    def apply(fin: => Unit): Finalizer = Seq((_) => fin);
+    def apply(fin: Option[Throwable] => Unit): Finalizer = Seq(fin);
 
-    protected def runQuietly(f: () => Unit) =
-      try { f() }
+    protected def runQuietly(f: Option[Throwable] => Unit, th: Option[Throwable] = None) =
+      try { f(th) }
       catch {
-        case (ex: Exception) => Log.error("Exception in a finalizer", ex);
+        case (ex: Exception) => Log.warn("Exception in a finalizer", ex);
+        case (ex: Throwable) => Log.error("Error in a finalizer", ex);
       }
 
-    def run(implicit fin: Finalizer) = fin.foreach(runQuietly(_));
+    protected def run(fin: Finalizer, th: Option[Throwable]): Unit =
+      fin.foreach(runQuietly(_, th));
+    def run(implicit fin: Finalizer): Unit =
+      run(fin, None);
 
     @inline
     def protect[R](fin: Finalizer, body: => R): R =
@@ -81,7 +91,12 @@ object Pipe {
       else
         try { body }
         catch {
-          case (ex: Exception) => { run(fin); throw ex; }
+          case (ex: Exception) => { run(fin, Some(ex)); throw ex; }
+          case (ex: Throwable) => {
+            Log.error("Serious Error! Finalizers may fail.", ex);
+            run(fin, Some(ex));
+            throw ex;
+          }
         }
 
     @inline

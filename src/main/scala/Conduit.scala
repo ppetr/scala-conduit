@@ -197,6 +197,23 @@ object Pipe {
     delay { loop() }
   }
 
+  def whileF[I,O](pipe: => Pipe[I,O,Boolean])(implicit finalizer: Finalizer): Pipe[I,O,Unit] =
+    whileF[I,O](pipe, true);
+  def whileF[I,O](pipe: => Pipe[I,O,Boolean], runFinalizer: Boolean = true)(implicit finalizer: Finalizer): Pipe[I,O,Unit] = {
+    def loop(): Pipe[I,O,Unit] =
+      flatMap(pipe, (b: Boolean) => {
+        if (b)
+          loop();
+        else {
+          if (runFinalizer)
+            Finalizer.run;
+          finish;
+        }
+      })
+    delay { loop() }
+  }
+
+
   @inline
   def blockInput[O,R](p: Pipe[Nothing,O,R]): Pipe[Any,O,R] =
     pipe(finish, p);

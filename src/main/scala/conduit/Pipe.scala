@@ -321,6 +321,8 @@ object Pipe {
   trait Monadic[I,O,R] extends Any {
     def flatMap[B](f: R => Pipe[I,O,B])(implicit finalizer: Finalizer): Pipe[I,O,B];
     @inline
+    final def >>=[B](f: R => Pipe[I,O,B])(implicit finalizer: Finalizer): Pipe[I,O,B] = flatMap(f);
+    @inline
     def map[B](f: R => B)(implicit finalizer: Finalizer) = flatMap((r: R) => done(f(r))): Pipe[I,O,B];
     def >>[B](p: => Pipe[I,O,B])(implicit finalizer: Finalizer): Pipe[I,O,B];
 

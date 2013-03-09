@@ -9,14 +9,14 @@ object IO {
   implicit def closeFin(implicit c: Closeable): Finalizer =
     Finalizer { System.err.println("Closing " + c); c.close() }
 
-  lazy val readLinesFile: Pipe[File,String,Nothing] = {
+  lazy val readLinesFile: Pipe[File,String,Unit] = {
     import Finalizer.empty
     pipe(mapP((f: File) => new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8"))), readLines);
   }
     //arrP((f: File) => new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8"))) >-> readLines;
 
-  lazy val readLines: Pipe[BufferedReader,String,Nothing] =
-    unfold[BufferedReader,String,Unit](readLines _);
+  lazy val readLines: Pipe[BufferedReader,String,Unit] =
+    unfold[BufferedReader,String](readLines _);
 
   def readLines(r: BufferedReader): Pipe[Any,String,Unit] = {
     implicit val fin = closeFin(r);
@@ -28,10 +28,15 @@ object IO {
   }
 
 
-  def writeLines(w: Writer): Pipe[String,Nothing,Nothing] = {
-    implicit val fin = closeFin(w)
-    forever(request((x: String) => { w.write(x); w.write('\n'); w.flush(); finish; }));
+  def writeLines(w: Writer): Pipe[String,Nothing,Unit] = {
+    implicit val fin = closeFin(w);
+    def read(x: String) =
+      { w.write(x); w.write('\n'); w.flush(); loop() }
+    def loop(): Pipe[String,Nothing,Unit] =
+      requestE(read _, { System.err.println("Input finished."); Finalizer.run(fin) })
+    loop();
   }
+
  
 
   // -----------------------------------------------------------------

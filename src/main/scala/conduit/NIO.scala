@@ -1,10 +1,13 @@
+package conduit
+
 import java.io._
 import java.nio._
 import java.nio.channels._
 
-object PipeNIO {
+object NIO {
   import Pipe._;
-  import PipeUtil._;
+  import IO._;
+  import Util._;
 
   def readChannel(buf: ByteBuffer, c: ReadableByteChannel): Pipe[Any,ByteBuffer,Unit] = {
     implicit val fin = Finalizer({ c.close() });
@@ -58,13 +61,13 @@ object PipeNIO {
   }
 
   def list(dir: File): Pipe[Any,File,Unit] =
-    PipeUtil.fromIterable(
+    Util.fromIterable(
       dir.listFiles(new FileFilter { def accept(f: File) = f.isFile; })
     );
 
   def listRec(dir: File): Pipe[Any,File,Unit] =
   {
-    import PipeUtil._;
+    import Util._;
     import Finalizer.empty
     val all = dir.listFiles();
     val files = all.toIterator.filter(_.isFile());
@@ -78,7 +81,7 @@ object PipeNIO {
 
   def main(argv: Array[String]) =
   {
-    import PipeUtil._;
+    import Util._;
     import Finalizer.empty
 
     val log: Pipe[String,Nothing,Unit] =

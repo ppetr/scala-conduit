@@ -1,3 +1,5 @@
+package conduit
+
 import annotation.tailrec
 import collection.mutable.{ArrayBuffer, Buffer, ArrayStack, Stack, Queue}
 import util.control.Exception

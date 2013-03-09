@@ -55,9 +55,9 @@ object PipeUtil {
     until(if (i.hasNext) Some(respond[A](i.next())) else None);
   }
 
-  def fromIterable[A]: Pipe[Iterable[A],A,Any] =
+  def fromIterable[A]: Pipe[Iterable[A],A,Nothing] =
     unfold[Iterable[A],A,Unit](i => fromIterable(i));
-  def fromIterator[A]: Pipe[Iterator[A],A,Any] =
+  def fromIterator[A]: Pipe[Iterator[A],A,Nothing] =
     unfold[Iterator[A],A,Unit](i => fromIterator(i));
 
   //def toCol[A,O,C <: Growable[A]](c: C): Pipe[A,O,C] =

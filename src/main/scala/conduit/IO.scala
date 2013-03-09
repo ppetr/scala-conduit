@@ -20,7 +20,7 @@ object IO {
 
   def readLines(r: BufferedReader): Source[String,Unit] = {
     implicit val fin = closeFin(r);
-    untilF[Any,String](Option(r.readLine).map(respond[String] _));
+    untilF[Any,Any,String](Option(r.readLine).map(respond[String] _));
   }
 
   implicit class BufferedReaderToSource(val reader: BufferedReader)
@@ -53,7 +53,7 @@ object IO {
         //val i = readLines(new BufferedReader(new InputStreamReader(is)));
         val i = new BufferedReader(new InputStreamReader(is)).asPipe >-> readLines;
 
-        val f = filter[String](s => s.length < 30);
+        val f = filter[String,Unit](s => s.length < 30);
         val o = writeLines(new OutputStreamWriter(System.out));
         runPipe(i >-> f >-> o);
 
@@ -64,7 +64,7 @@ object IO {
       } else
       {
         val i = List("abc", "efg4", "123").toSource;
-        val f = filter[String](s => s.length <= 3);
+        val f = filter[String,Unit](s => s.length <= 3);
         val o = writeLines(new OutputStreamWriter(System.out));
         runPipe(i >-> f >-> o);
         System.err.println("Finished.");

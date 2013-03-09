@@ -141,7 +141,7 @@ object Pipe {
   }
 
   @inline
-  def delay[I,O,R](inner: => Pipe[I,O,R])(implicit finalizer: Finalizer = Finalizer.empty): Pipe[I,O,R] =
+  def delay[U,I,O,R](inner: => GenPipe[U,I,O,R])(implicit finalizer: Finalizer = Finalizer.empty): GenPipe[U,I,O,R] =
     Delay(() => inner, finalizer);
 
   @inline
@@ -155,13 +155,17 @@ object Pipe {
   def requestEither[U,I,O,R](cont: Either[U,I] => GenPipe[U,I,O,R])(implicit finalizer: Finalizer): GenPipe[U,I,O,R] =
     NeedInput((i: I) => cont(Right(i)), (u: U) => cont(Left(u)), finalizer);
 
-  def requestU[I,O](cont: I => Pipe[I,O,Unit])(implicit finalizer: Finalizer = Finalizer.empty): Pipe[I,O,Unit] =
-    requestE[I,O,Unit]((i: I) => cont(i), ());
+  def requestI[U,I,O](cont: I => GenPipe[U,I,O,U])(implicit finalizer: Finalizer = Finalizer.empty): GenPipe[U,I,O,U] =
+    requestE[U,I,O,U]((i: I) => cont(i), identity[U] _);
+  def requestU[U,I,O](cont: I => GenPipe[U,I,O,Unit])(implicit finalizer: Finalizer = Finalizer.empty): GenPipe[U,I,O,Unit] =
+    requestE[U,I,O,Unit]((i: I) => cont(i), (_) => ());
+  def requestE[U,I,O,R](cont: I => GenPipe[U,I,O,R], end: U => R)(implicit finalizer: Finalizer): GenPipe[U,I,O,R] =
+    request[U,I,O,R](cont, (u: U) => done(end(u)));
   def requestE[I,O,R](cont: I => Pipe[I,O,R], end: => R)(implicit finalizer: Finalizer): Pipe[I,O,R] =
-    NeedInput(cont, (_) => { finalizer.protect(done(end)); }, finalizer);
+    request[Any,I,O,R](cont, (_: Any) => done(end));
 
   @inline
-  def respond[I,O,R](o: O, cont: => Pipe[I,O,R])(implicit finalizer: Finalizer): Pipe[I,O,R] =
+  def respond[U,I,O,R](o: O, cont: => GenPipe[U,I,O,R])(implicit finalizer: Finalizer): GenPipe[U,I,O,R] =
     HaveOutput(o, () => cont, finalizer);
   @inline
   def respond[O](o: O)(implicit finalizer: Finalizer): Source[O,Unit] =
@@ -188,20 +192,20 @@ object Pipe {
   def andThen[U,I,O,R](first: GenPipe[U,I,O,_], cont: => GenPipe[U,I,O,R])(implicit finalizer: Finalizer): GenPipe[U,I,O,R] =
     flatMap[U,I,O,R,Any](first, const(cont));
 
-  def untilF[I,O,A,B](f: A => Either[Pipe[I,O,A],B], start: A)(implicit finalizer: Finalizer): Pipe[I,O,B] =
-    untilF[I,O,A,B](f, start, true);
-  def untilF[I,O,A,B](f: A => Either[Pipe[I,O,A],B], start: A, runFinalizer: Boolean)(implicit finalizer: Finalizer): Pipe[I,O,B] = {
-    def loop(x: A): Pipe[I,O,B] =
+  def untilF[U,I,O,A,B](f: A => Either[GenPipe[U,I,O,A],B], start: A)(implicit finalizer: Finalizer): GenPipe[U,I,O,B] =
+    untilF[U,I,O,A,B](f, start, true);
+  def untilF[U,I,O,A,B](f: A => Either[GenPipe[U,I,O,A],B], start: A, runFinalizer: Boolean)(implicit finalizer: Finalizer): GenPipe[U,I,O,B] = {
+    def loop(x: A): GenPipe[U,I,O,B] =
       f(start) match {
         case Left(pipe) => flatMap(pipe, loop _);
         case Right(b)   => if (runFinalizer) Finalizer.run; done(b);
       };
     delay(loop(start));
   }
-  def untilF[I,O](pipe: => Option[Pipe[I,O,Any]])(implicit finalizer: Finalizer): Pipe[I,O,Unit] =
-    untilF[I,O](pipe, true);
-  def untilF[I,O](pipe: => Option[Pipe[I,O,Any]], runFinalizer: Boolean = true)(implicit finalizer: Finalizer): Pipe[I,O,Unit] = {
-    def loop(): Pipe[I,O,Unit] =
+  def untilF[U,I,O](pipe: => Option[GenPipe[U,I,O,Any]])(implicit finalizer: Finalizer): GenPipe[U,I,O,Unit] =
+    untilF[U,I,O](pipe, true);
+  def untilF[U,I,O](pipe: => Option[GenPipe[U,I,O,Any]], runFinalizer: Boolean = true)(implicit finalizer: Finalizer): GenPipe[U,I,O,Unit] = {
+    def loop(): GenPipe[U,I,O,Unit] =
       pipe match {
         case Some(pipe) => andThen(pipe, loop());
         case None       => if (runFinalizer) Finalizer.run; done;
@@ -209,10 +213,10 @@ object Pipe {
     delay { loop() }
   }
 
-  def whileF[I,O](pipe: => Pipe[I,O,Boolean])(implicit finalizer: Finalizer): Pipe[I,O,Unit] =
-    whileF[I,O](pipe, true);
-  def whileF[I,O](pipe: => Pipe[I,O,Boolean], runFinalizer: Boolean = true)(implicit finalizer: Finalizer): Pipe[I,O,Unit] = {
-    def loop(): Pipe[I,O,Unit] =
+  def whileF[U,I,O](pipe: => GenPipe[U,I,O,Boolean])(implicit finalizer: Finalizer): GenPipe[U,I,O,Unit] =
+    whileF[U,I,O](pipe, true);
+  def whileF[U,I,O](pipe: => GenPipe[U,I,O,Boolean], runFinalizer: Boolean = true)(implicit finalizer: Finalizer): GenPipe[U,I,O,Unit] = {
+    def loop(): GenPipe[U,I,O,Unit] =
       flatMap(pipe, (b: Boolean) => {
         if (b)
           loop();
@@ -237,7 +241,7 @@ object Pipe {
   def discardOutput[I,R](p: Pipe[I,Any,Unit]): Sink[I,Unit] =
     pipe(p, discardOutput);
   val discardOutput: Pipe[Any,Nothing,Unit] =
-    requestU[Any,Nothing]((_) => discardOutput);
+    requestU[Any,Any,Nothing]((_) => discardOutput);
  
 
   /**
@@ -246,7 +250,7 @@ object Pipe {
    */
   @inline
   def unfold[I,O](f: I => NoInput[Unit,O,Any])(implicit finalizer: Finalizer): Pipe[I,O,Unit] =
-    requestU[I,O](i => andThen(blockInput(f(i)), unfold(f)));
+    requestU[Any,I,O](i => andThen(blockInput(f(i)), unfold(f)));
   // TODO: unfold for generic U
 
   def repeat[O](produce: => O)(implicit finalizer: Finalizer): Source[O,Nothing] = {
@@ -373,6 +377,7 @@ object Pipe {
     @inline def flatMap[B](f: R => GenPipe[U,I,O,B])(implicit finalizer: Finalizer) = Pipe.flatMap(pipe, f)
     //@inline def map[B](f: R => B)(implicit finalizer: Finalizer) = Pipe.map(pipe, f);
     @inline def >>[B](p: => GenPipe[U,I,O,B])(implicit finalizer: Finalizer) = Pipe.flatMap(pipe, (_:R) => p);
+    @inline def <<[B](p: => GenPipe[U,I,O,B])(implicit finalizer: Finalizer) = Pipe.flatMap(p, (_:B) => pipe);
 
     @inline def >->[X,S](that: GenPipe[R,O,X,S]) = Pipe.pipe(pipe, that);
     @inline def <-<[X,M](that: GenPipe[M,X,I,U]) = Pipe.pipe(that, pipe);

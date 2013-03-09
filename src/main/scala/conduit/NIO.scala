@@ -11,7 +11,7 @@ object NIO {
 
   def readChannel(buf: ByteBuffer, c: ReadableByteChannel): Source[ByteBuffer,Unit] = {
     implicit val fin = Finalizer({ c.close() });
-    untilF[Any,ByteBuffer]({
+    untilF[Any,Any,ByteBuffer]({
         buf.clear();
         val i = c.read(buf);
         if (i < 0) None;
@@ -56,7 +56,7 @@ object NIO {
   def leftovers[B <: Buffer]: Pipe[B,B,Unit] = {
     import Finalizer.empty;
     def loop(): Pipe[B,B,Unit] =
-      requestU[B,B](b => untilF[B,B] { if (b.hasRemaining()) Some(respond(b)) else None } >> loop());
+      requestU[Any,B,B](b => untilF[Any,B,B] { if (b.hasRemaining()) Some(respond(b)) else None } >> loop());
     loop();
   }
 
@@ -89,7 +89,7 @@ object NIO {
 
     val pipe =
       listRec(new File(".")) >->
-        filter[File](_.getName().endsWith(".scala")) >->
+        filter[File,Unit](_.getName().endsWith(".scala")) >->
         readLinesFile >->
         log;
 

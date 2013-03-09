@@ -9,10 +9,10 @@ object Util {
     def asPipe: Source[O,Unit] = respond[O](value)(Finalizer.empty);
   }
 
-  def filter[A](p: A => Boolean): Pipe[A,A,Unit] = {
+  def filter[A,R](p: A => Boolean): GenPipe[R,A,A,R] = {
     import Finalizer.empty
-    def loop: Pipe[A,A,Unit] =
-      requestU[A,A](x => if (p(x)) (respond(x).as[A,A] >> loop) else loop);
+    def loop: GenPipe[R,A,A,R] =
+      requestI[R,A,A](x => if (p(x)) (loop << respond(x)) else loop);
     loop;
   }
  

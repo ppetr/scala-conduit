@@ -110,7 +110,7 @@ object Pipe {
   }
 
   @inline
-  protected val nextDone: () => Pipe[Any,Nothing,Unit] = () => finish;
+  protected val nextDone: () => Pipe[Any,Nothing,Unit] = () => done;
   protected def const[A](body: => A): Any => A =
     (_) => body;
 
@@ -118,12 +118,12 @@ object Pipe {
    * Returns a pipe that does nothing and returns <code>()</code>.
    */
   @inline
-  val finish: Pipe[Any,Nothing,Unit] = finish(());
+  val done: Pipe[Any,Nothing,Unit] = done(());
   /**
    * Returns a pipe that just returns the given result.
    */
   @inline
-  def finish[R](result: R): Pipe[Any,Nothing,R] = Done(result);
+  def done[R](result: R): Pipe[Any,Nothing,R] = Done(result);
   /**
    * Returns a pipe that runs the given finalizer and then returns the given result.
    */
@@ -149,7 +149,7 @@ object Pipe {
     HaveOutput(o, () => cont, finalizer);
   @inline
   def respond[O](o: O)(implicit finalizer: Finalizer): Pipe[Any,O,Unit] =
-    HaveOutput(o, () => finish, finalizer);
+    HaveOutput(o, () => done, finalizer);
 
 /*
   @inline
@@ -166,7 +166,7 @@ object Pipe {
 
   @inline
   def map[I,O,S,R](pipe: Pipe[I,O,S], f: S => R)(implicit finalizer: Finalizer): Pipe[I,O,R] =
-    flatMap(pipe, (x: S) => finish(f(x)));
+    flatMap(pipe, (x: S) => done(f(x)));
 
 
   def andThen[I,O,R](first: Pipe[I,O,_], then: => Pipe[I,O,R])(implicit finalizer: Finalizer): Pipe[I,O,R] =
@@ -181,7 +181,7 @@ object Pipe {
     def loop(x: A): Pipe[I,O,B] =
       f(start) match {
         case Left(pipe) => flatMap(pipe, loop _);
-        case Right(b)   => if (runFinalizer) Finalizer.run; finish(b);
+        case Right(b)   => if (runFinalizer) Finalizer.run; done(b);
       };
     delay(loop(start));
   }
@@ -191,23 +191,23 @@ object Pipe {
     def loop(): Pipe[I,O,Unit] =
       pipe match {
         case Some(pipe) => andThen(pipe, loop());
-        case None       => if (runFinalizer) Finalizer.run; finish;
+        case None       => if (runFinalizer) Finalizer.run; done;
       }
     delay { loop() }
   }
 
   @inline
   def blockInput[I,O,R](ifRequest: Pipe[I,O,R], p: Pipe[Nothing,O,R]): Pipe[I,O,R] =
-    flatMap(pipeE(finish, p), (r: Either[Unit,R]) => r match {
+    flatMap(pipeE(done, p), (r: Either[Unit,R]) => r match {
       case Left(_)  => ifRequest;
-      case Right(r) => finish(r);
+      case Right(r) => done(r);
     })(Finalizer.empty);
   @inline
   def blockInput[O,R](ifRequest: R, p: Pipe[Nothing,O,R]): Pipe[Any,O,R] =
-    pipe(finish(ifRequest), p);
+    pipe(done(ifRequest), p);
   @inline
   def blockInput[O,R](p: Pipe[Nothing,O,R]): Pipe[Any,O,Any] =
-    pipe(finish, p);
+    pipe(done, p);
  
 
   /**
@@ -321,7 +321,7 @@ object Pipe {
 
   implicit def pipeFlatMap[I,O,A](pipe: Pipe[I,O,A])(implicit finalizer: Finalizer) = new {
     @inline def flatMap[B](f: A => Pipe[I,O,B]) = Pipe.flatMap(pipe, f)
-    @inline def map[B](f: A => B) = flatMap((r: A) => finish(f(r)));
+    @inline def map[B](f: A => B) = flatMap((r: A) => done(f(r)));
     @inline def >>[B](p: => Pipe[I,O,B]): Pipe[I,O,B] = flatMap(_ => p);
 
     @inline def >->[X](that: Pipe[O,X,A]) = Pipe.pipe(pipe, that);

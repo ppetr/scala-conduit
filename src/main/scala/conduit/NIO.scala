@@ -32,12 +32,12 @@ object NIO {
 
   def writeToOutputStream(os: OutputStream): Pipe[Array[Byte],Nothing,Any] = {
     implicit val fin = closeFin(os);
-    forever(request((buf: Array[Byte]) => finish(os.write(buf))));
+    forever(request((buf: Array[Byte]) => done(os.write(buf))));
   }
 
   def writeChannel(c: WritableByteChannel): Pipe[ByteBuffer,Nothing,Any] = {
     implicit val fin = closeFin(c)
-    forever(request((buf: ByteBuffer) => finish(c.write(buf))));
+    forever(request((buf: ByteBuffer) => done(c.write(buf))));
   }
 
   def writeFile(file: File): Pipe[ByteBuffer,Nothing,Any] =

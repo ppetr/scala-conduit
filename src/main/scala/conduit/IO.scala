@@ -30,7 +30,7 @@ object IO {
 
   def writeLines(w: Writer): Pipe[String,Nothing,Nothing] = {
     implicit val fin = closeFin(w)
-    forever(request((x: String) => { w.write(x); w.write('\n'); w.flush(); finish; }));
+    forever(request((x: String) => { w.write(x); w.write('\n'); w.flush(); done; }));
   }
  
 

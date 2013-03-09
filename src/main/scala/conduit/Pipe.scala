@@ -224,6 +224,12 @@ object Pipe {
   @inline
   def blockInput[O,R](p: NoInput[O,R]): Source[O,R] =
     pipe(done, p);
+
+  @inline
+  def discardOutput[I,R](p: Pipe[I,Any,Unit]): Sink[I,Unit] =
+    pipe(p, discardOutput);
+  val discardOutput: Pipe[Any,Nothing,Unit] =
+    requestU[Any,Nothing]((_) => discardOutput);
  
 
   /**
@@ -314,7 +320,7 @@ object Pipe {
           val finUp = upCore.finalizer;
           val finPlus = finUp ++ finDown;
           upCore match {
-            case Done(_)  => stepNoInput(downCore);
+            case Done(_)  => Delay(() => stepNoInput(endO()), finPlus)
             case Delay(next, _)
                           => Delay(() => step(next(), downCore, finUp), finPlus)
             case HaveOutput(x, next, finDown1)
@@ -331,12 +337,15 @@ object Pipe {
   }
 
   private def stepNoInput[O,R](pipe: NoInput[O,R]): PipeCore[Any,O,R] =
+    stepFuse(done, pipe)
+  /*
     stepNoInput[O,R](pipe) match {
       case p@Done(_)                => p;
       case NeedInput(_, e, fin)     => Delay(() => stepNoInput(e()), fin);
       case HaveOutput(o, next, fin) => HaveOutput(o, () => stepNoInput(next()), fin);
       case Delay(next, fin)         => Delay(() => stepNoInput(next()), fin);
     }
+    */
 
 
   trait Monadic[I,O,R] extends Any {

@@ -122,12 +122,6 @@ object Pipe {
 
   @inline
   protected val nextDone: () => Pipe[Any,Nothing,Unit] = () => finish;
-  /*
-  protected implicit def toFunStrict[A](body: A): () => A =
-    () => body;
-  protected implicit def toFunLazy[A](body: => A): () => A =
-    () => body;
-  */
   protected def const[A](body: => A): Any => A =
     (_) => body;
 
@@ -330,61 +324,6 @@ object Pipe {
       case Delay(next, fin)         => Delay(() => stepNoInput(next()), fin);
     }
 
-//    pipe(i, o, mergeEither[R] _);
-//  private def mergeEither[A](e: Either[A,A]): A =
-//    e match {
-//      case Left(x)  => x
-//      case Right(x) => x
-//    }
-//  /**
-//   * Composes two pipes, blocked on respond. This means that the second
-//   * <var>outp</var> pipe is executed until it needs input, then <var>inp</var>
-//   * is invoked.
-//   */
-//  def pipe[I,X,O,R1,R2,R](i: Pipe[I,X,R1], o: Pipe[X,O,R2], end: Either[R1,R2] => R): Pipe[I,O,R] = {
-//    @tailrec
-//    def step(i: Pipe[I,X,R1], o: Pipe[X,O,R2], fins: List[RunOnce]): Pipe[I,O,R] = {
-//      val consume = o match {
-//        case Done(r)              => RunOnce.run(fins); return Done(end(Right(r)))
-//        case Delay(o1, fin)       => return Delay(() => stepCont(i, o1(), fin :: fins), fin);
-//        case HaveOutput(o, next)  => return HaveOutput(o, () => stepCont(i, next(), fins) )
-//        case NeedInput(f)         => f
-//      }
-//      i match {
-//        case HaveOutput(x, next)  => step(next(), consume(x), fins);
-//        case Delay(i1, fin)       => return Delay(() => stepCont(i1(), o, fin :: fins), fin);
-//        case Done(r)              => RunOnce.run(fins); return Done(end(Left(r)))
-//        case NeedInput(c)         => return NeedInput((x: I) => stepCont(c(x), o, fins));
-//      }
-//    }
-//    def stepCont(inp: Pipe[I,X,R1], outp: Pipe[X,O,R2], fins: List[RunOnce])
-//      = step(inp, outp, fins);
-//    stepCont(i, o, Nil);
-//  }
-//
-//
-//  def runPipe[R](pipe: Pipe[Unit,Nothing,R]): R = {
-//    @tailrec
-//    def step[R](pipe: Pipe[Unit,Nothing,R], fins: ArrayStack[RunOnce]): R = {
-//      pipe match {
-//        case Done(r)            => r;
-//        case Delay(p, fin)      => step(p(), fins += fin);
-//        case HaveOutput(o, _)   => o; // Never occurs - o is Nothing so it can be typed to anything.
-//        case NeedInput(consume) => step(consume(()), fins);
-//      }
-//    }
-//    def stepCont[R](pipe: Pipe[Unit,Nothing,R], fins: ArrayStack[RunOnce]): R =
-//      step(pipe, fins);
-//
-//    val fins = new ArrayStack[RunOnce];
-//    try {
-//      step(pipe, fins);
-//    } finally {
-//      fins.foreach(_.apply());
-//    }
-//  }
-
-
 
 
   implicit def pipeFlatMap[I,O,A](pipe: Pipe[I,O,A])(implicit finalizer: Finalizer) = new {
@@ -395,30 +334,4 @@ object Pipe {
     @inline def >->[X](that: Pipe[O,X,A]) = Pipe.pipe(pipe, that);
     @inline def <-<[X](that: Pipe[X,I,A]) = Pipe.pipe(that, pipe);
   }
-
-
-//  /**
-//   * Executes the given finalizer only the first time {@link #apply()} is called.
-//   * This class is <em>not</em> synchronized.
-//   */
-//  class RunOnce(actions: Iterator[Catcher])
-//    extends Catcher
-//  {
-//    def this(actions: Iterable[Catcher]) { this(actions.iterator); }
-//
-//    override def apply(): Unit = {
-//      while (actions.hasNext)
-//        actions.next().apply();
-//    }
-//  }
-//  object RunOnce {
-//    object Empty extends RunOnce(Iterator.empty);
-//    def apply(actions: Iterable[Catcher]): RunOnce =
-//      if (actions.isEmpty) Empty else new RunOnce(actions);
-//    def apply(actions: Catcher*): RunOnce =
-//      apply(actions : Iterable[Catcher]);
-//
-//    def run(fins: Iterable[RunOnce]) =
-//      fins.foreach(_.apply);
-//  }
 }

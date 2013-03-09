@@ -10,9 +10,10 @@ import util.control.Exception
  */
 sealed trait GenPipe[-U,-I,+O,+R]
 {
-  final def as[I1 <: I, O1 >: O]: GenPipe[U,I1,O1,R] = this;
-  final def asI[I1 <: I]: GenPipe[U,I1,O,R] = this;
-  final def asO[O1 >: O]: GenPipe[U,I,O1,R] = this;
+  @inline final def as[U1 <: U,I1 <: I]: GenPipe[U1,I1,O,R] = this;
+  @inline final def asU[U1 <: U]: GenPipe[U1,I,O,R] = this;
+  @inline final def asI[U1 <: U,I1 <: I]: GenPipe[U1,I1,O,R] = this;
+  @inline final def asO[O1 >: O]: GenPipe[U,I,O1,R] = this;
 
   //final def map[R1](f: R => R1): Pipe[I,O,R1] = Pipe.map(this, f);
 

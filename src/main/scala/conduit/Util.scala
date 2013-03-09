@@ -12,7 +12,7 @@ object Util {
   def filter[A,R](p: A => Boolean): GenPipe[R,A,A,R] = {
     import Finalizer.empty
     def loop: GenPipe[R,A,A,R] =
-      requestI[R,A,A](x => if (p(x)) (loop << respond(x)) else loop);
+      requestI[R,A,A](x => if (p(x)) (respond(x).as[R,A] >> loop) else loop);
     loop;
   }
  

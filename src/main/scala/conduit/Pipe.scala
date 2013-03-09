@@ -325,6 +325,7 @@ object Pipe {
     @inline
     def map[B](f: R => B)(implicit finalizer: Finalizer) = flatMap((r: R) => done(f(r))): Pipe[I,O,B];
     def >>[B](p: => Pipe[I,O,B])(implicit finalizer: Finalizer): Pipe[I,O,B];
+    def <<(p: Pipe[I,O,Any])(implicit finalizer: Finalizer): Pipe[I,O,R];
 
     def >->[X](that: Pipe[O,X,R])(implicit finalizer: Finalizer): Pipe[I,X,R];
     def <-<[X](that: Pipe[X,I,R])(implicit finalizer: Finalizer): Pipe[X,O,R];
@@ -337,6 +338,7 @@ object Pipe {
     @inline def flatMap[B](f: R => Pipe[I,O,B])(implicit finalizer: Finalizer) = Pipe.flatMap(pipe, f)
     //@inline def map[B](f: R => B)(implicit finalizer: Finalizer) = Pipe.map(pipe, f);
     @inline def >>[B](p: => Pipe[I,O,B])(implicit finalizer: Finalizer): Pipe[I,O,B] = Pipe.flatMap(pipe, (_:R) => p);
+    @inline def <<(p: Pipe[I,O,Any])(implicit finalizer: Finalizer): Pipe[I,O,R] = Pipe.flatMap(p, (_:Any) => pipe);
 
     @inline def >->[X](that: Pipe[O,X,R])(implicit finalizer: Finalizer) = Pipe.pipe(pipe, that);
     @inline def <-<[X](that: Pipe[X,I,R])(implicit finalizer: Finalizer) = Pipe.pipe(that, pipe);

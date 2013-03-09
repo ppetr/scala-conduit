@@ -8,11 +8,11 @@ import util.control.Exception
  * Accepts input elements of type <code>I</code>, produces output elements of
  * type <code>O</code> and when finished, returns <code>R</code>.
  */
-sealed trait Pipe[-I,+O,+R]
+sealed trait GenPipe[-U,-I,+O,+R]
 {
-  final def as[I1 <: I, O1 >: O]: Pipe[I1,O1,R] = this;
-  final def asI[I1 <: I]: Pipe[I1,O,R] = this;
-  final def asO[O1 >: O]: Pipe[I,O1,R] = this;
+  final def as[I1 <: I, O1 >: O]: GenPipe[U,I1,O1,R] = this;
+  final def asI[I1 <: I]: GenPipe[U,I1,O,R] = this;
+  final def asO[O1 >: O]: GenPipe[U,I,O1,R] = this;
 
   //final def map[R1](f: R => R1): Pipe[I,O,R1] = Pipe.map(this, f);
 
@@ -24,31 +24,31 @@ sealed trait Pipe[-I,+O,+R]
  * primitives, covered by <code>PipeCode</code>. It only allows input, output,
  * delay and producing the final result.
  */
-private sealed trait PipeCore[-I,+O,+R] extends Pipe[I,O,R] {
+private sealed trait PipeCore[-U,-I,+O,+R] extends GenPipe[U,I,O,R] {
   def finalizer: Pipe.Finalizer;
 }
 
-private final case class HaveOutput[-I,+O,+R](output: O, next: () => Pipe[I,O,R], override val finalizer: Pipe.Finalizer)
-  extends PipeCore[I,O,R];
-private final case class NeedInput[-I,+O,+R](consume: I => Pipe[I,O,R], noInput: () => Pipe.NoInput[O,R], override val finalizer: Pipe.Finalizer)
-  extends PipeCore[I,O,R];
+private final case class HaveOutput[-U,-I,+O,+R](output: O, next: () => GenPipe[U,I,O,R], override val finalizer: Pipe.Finalizer)
+  extends PipeCore[U,I,O,R];
+private final case class NeedInput[-U,-I,+O,+R](consume: I => GenPipe[U,I,O,R], noInput: U => Pipe.NoInput[U,O,R], override val finalizer: Pipe.Finalizer)
+  extends PipeCore[U,I,O,R];
 private final case class Done[+R](result: R)
-  extends PipeCore[Any,Nothing,R] {
+  extends PipeCore[Any,Any,Nothing,R] {
     override def finalizer = Pipe.Finalizer.empty;
   }
-private final case class Delay[-I,+O,+R](next: () => Pipe[I,O,R], override val finalizer: Pipe.Finalizer)
-  extends PipeCore[I,O,R];
+private final case class Delay[-U,-I,+O,+R](next: () => GenPipe[U,I,O,R], override val finalizer: Pipe.Finalizer)
+  extends PipeCore[U,I,O,R];
 
 // We also have two more primitives that represent two core operations on
 // pipes: binding and fusing. They are converted into the above ones when a
 // pipe is run.
 
-private final case class Bind[-I,+O,+R,S](first: Pipe[I,O,S], cont: S => Pipe[I,O,R], finalizer: Pipe.Finalizer)
-  extends Pipe[I,O,R];
-private final case class Fuse[-I,X,+O,+R](up: Pipe[I,X,Any], down: Pipe[X,O,R])
-  extends Pipe[I,O,R];
-//private final case class Leftover[I,+O,+R](leftover: I, next: () => Pipe[I,O,R])
-//  extends Pipe[I,O,R];
+private final case class Bind[-U,-I,+O,+R,S](first: GenPipe[U,I,O,S], cont: S => GenPipe[U,I,O,R], finalizer: Pipe.Finalizer)
+  extends GenPipe[U,I,O,R];
+private final case class Fuse[-U,-I,X,M,+O,+R](up: GenPipe[U,I,X,M], down: GenPipe[M,X,O,R])
+  extends GenPipe[U,I,O,R];
+//private final case class Leftover[I,+O,+R](leftover: I, next: () => GenPipe[U,I,O,R])
+//  extends GenPipe[U,I,O,R];
 
 
 object Pipe {
@@ -108,10 +108,13 @@ object Pipe {
       fin.run(None);
   }
 
+  type LQueue[+A] = collection.immutable.Queue[A]
+  val emptyLQueue: LQueue[Nothing] = collection.immutable.Queue.empty
 
-  type Sink[-I,+R] = Pipe[I,Nothing,R]
-  type Source[+O,+R] = Pipe[Any,O,R]
-  type NoInput[+O,+R] = Pipe[Nothing,O,R]
+  type Pipe[-I,+O,+R]     = GenPipe[Any,I,O,R]
+  type Sink[-I,+R]        = Pipe[I,Nothing,R]
+  type Source[+O,+R]      = Pipe[Any,O,R]
+  type NoInput[-U,+O,+R]  = GenPipe[U,Nothing,O,R]
 
   @inline
   protected val nextDone: () => Source[Nothing,Unit] = () => done;
@@ -145,15 +148,17 @@ object Pipe {
   def request[I]: Sink[I,Option[I]] =
     requestOpt((i: Option[I]) => Done(i))(Finalizer.empty);
   @inline
-  def request[I,O,R](cont: I => Pipe[I,O,R], end: => Source[O,R])(implicit finalizer: Finalizer): Pipe[I,O,R] =
-    NeedInput(cont, () => end, finalizer);
+  def request[U,I,O,R](cont: I => GenPipe[U,I,O,R], end: U => NoInput[U,O,R])(implicit finalizer: Finalizer): GenPipe[U,I,O,R] =
+    NeedInput(cont, end, finalizer);
   def requestOpt[I,O,R](cont: Option[I] => Pipe[I,O,R])(implicit finalizer: Finalizer): Pipe[I,O,R] =
-    NeedInput((i: I) => cont(Some(i)), () => cont(None), finalizer);
+    NeedInput((i: I) => cont(Some(i)), (_) => cont(None), finalizer);
+  def requestEither[U,I,O,R](cont: Either[U,I] => GenPipe[U,I,O,R])(implicit finalizer: Finalizer): GenPipe[U,I,O,R] =
+    NeedInput((i: I) => cont(Right(i)), (u: U) => cont(Left(u)), finalizer);
 
   def requestU[I,O](cont: I => Pipe[I,O,Unit])(implicit finalizer: Finalizer = Finalizer.empty): Pipe[I,O,Unit] =
     requestE[I,O,Unit]((i: I) => cont(i), ());
   def requestE[I,O,R](cont: I => Pipe[I,O,R], end: => R)(implicit finalizer: Finalizer): Pipe[I,O,R] =
-    NeedInput(cont, () => { finalizer.protect(done(end)); }, finalizer);
+    NeedInput(cont, (_) => { finalizer.protect(done(end)); }, finalizer);
 
   @inline
   def respond[I,O,R](o: O, cont: => Pipe[I,O,R])(implicit finalizer: Finalizer): Pipe[I,O,R] =
@@ -172,16 +177,16 @@ object Pipe {
 */
 
   @inline
-  def flatMap[I,O,R,S](pipe: Pipe[I,O,S], f: S => Pipe[I,O,R])(implicit finalizer: Finalizer): Pipe[I,O,R] =
+  def flatMap[U,I,O,R,S](pipe: GenPipe[U,I,O,S], f: S => GenPipe[U,I,O,R])(implicit finalizer: Finalizer): GenPipe[U,I,O,R] =
     Bind(pipe, f, finalizer);
 
   @inline
-  def map[I,O,S,R](pipe: Pipe[I,O,S], f: S => R)(implicit finalizer: Finalizer): Pipe[I,O,R] =
+  def map[U,I,O,S,R](pipe: GenPipe[U,I,O,S], f: S => R)(implicit finalizer: Finalizer): GenPipe[U,I,O,R] =
     flatMap(pipe, (x: S) => done(f(x)));
 
 
-  def andThen[I,O,R](first: Pipe[I,O,_], cont: => Pipe[I,O,R])(implicit finalizer: Finalizer): Pipe[I,O,R] =
-    flatMap[I,O,R,Any](first, const(cont));
+  def andThen[U,I,O,R](first: GenPipe[U,I,O,_], cont: => GenPipe[U,I,O,R])(implicit finalizer: Finalizer): GenPipe[U,I,O,R] =
+    flatMap[U,I,O,R,Any](first, const(cont));
 
   def untilF[I,O,A,B](f: A => Either[Pipe[I,O,A],B], start: A)(implicit finalizer: Finalizer): Pipe[I,O,B] =
     untilF[I,O,A,B](f, start, true);
@@ -222,7 +227,10 @@ object Pipe {
 
 
   @inline
-  def blockInput[O,R](p: NoInput[O,R]): Source[O,R] =
+  def blockInput[U,O,R](upResult: U, p: NoInput[U,O,R]): Source[O,R] =
+    pipe(done(upResult), p);
+  @inline
+  def blockInput[O,R](p: NoInput[Unit,O,R]): Source[O,R] =
     pipe(done, p);
  
 
@@ -231,8 +239,9 @@ object Pipe {
    * they're terminated.
    */
   @inline
-  def unfold[I,O](f: I => NoInput[O,Any])(implicit finalizer: Finalizer): Pipe[I,O,Unit] =
+  def unfold[I,O](f: I => NoInput[Unit,O,Any])(implicit finalizer: Finalizer): Pipe[I,O,Unit] =
     requestU[I,O](i => andThen(blockInput(f(i)), unfold(f)));
+  // TODO: unfold for generic U
 
   def repeat[O](produce: => O)(implicit finalizer: Finalizer): Source[O,Nothing] = {
     def loop(): Source[O,Nothing]
@@ -243,7 +252,7 @@ object Pipe {
 
 
   @inline
-  def pipe[I,X,O,R](i: Pipe[I,X,Any], o: Pipe[X,O,R]): Pipe[I,O,R] =
+  def pipe[U,I,X,M,O,R](i: GenPipe[U,I,X,M], o: GenPipe[M,X,O,R]): GenPipe[U,I,O,R] =
     Fuse(i, o);
 
 
@@ -263,14 +272,15 @@ object Pipe {
     extends Leftover[Nothing,R];
 
 
-  def runPipe[R](pipe: Sink[Nothing,R]): R = {
+
+  def runPipe[R](pipe: GenPipe[Unit,Nothing,Nothing,R]): R = {
     import Finalizer._
     @tailrec
-    def step[R](pipe: Sink[Nothing,R]): R = {
-      stepPipe[Nothing,Nothing,R](pipe) match {
+    def step[R](pipe: GenPipe[Unit,Nothing,Nothing,R]): R = {
+      stepPipe[Unit,Nothing,Nothing,R](pipe) match {
         case Done(r)                  => r;
         case HaveOutput(o, _, _)      => o; // Never occurs - o is Nothing so it can be typed to anything.
-        case NeedInput(_, end, fin)   => step(fin.protect({ end() }));
+        case NeedInput(_, end, fin)   => step(fin.protect({ end(()) }));
         case Delay(next, fin)         => step(fin.protect({ next() }));
       }
     }
@@ -278,7 +288,7 @@ object Pipe {
   }
 
 
-  private def stepPipe[I,O,R](pipe: Pipe[I,O,R]): PipeCore[I,O,R] =
+  private def stepPipe[U,I,O,R](pipe: GenPipe[U,I,O,R]): PipeCore[U,I,O,R] =
     pipe match {
       case p@Done(_)              => p;
       case p@NeedInput(_,_,_)     => p;
@@ -288,19 +298,19 @@ object Pipe {
       case Bind(next, cont, fin)  => stepBind(next, cont, fin);
     }
 
-  private def stepBind[I,O,R,S](pipe: Pipe[I,O,S], cont: S => Pipe[I,O,R], fin: Finalizer): PipeCore[I,O,R] =
+  private def stepBind[U,I,O,R,S](pipe: GenPipe[U,I,O,S], cont: S => GenPipe[U,I,O,R], fin: Finalizer): PipeCore[U,I,O,R] =
     stepPipe(pipe) match {
       case Done(s)                    => Delay(() => cont(s), fin)
       case NeedInput(cons, end, finI) => NeedInput(i  => stepBind(cons(i), cont, fin),
-                                                   () => stepBind(stepNoInput(end()), cont, fin),
+                                                   u  => stepBind(stepNoInput(u, end(u)), cont, fin),
                                                    finI)
       case HaveOutput(o, next, finO)  => HaveOutput(o, () => stepBind(next(), cont, fin), finO)
       case Delay(pipe, finD)          => Delay(() => stepBind(pipe(), cont, fin), finD)
     }
 
-  private def stepFuse[I,X,O,R](up: Pipe[I,X,Any], down: Pipe[X,O,R]): PipeCore[I,O,R] = {
+  private def stepFuse[U,I,X,M,O,R](up: GenPipe[U,I,X,M], down: GenPipe[M,X,O,R]): PipeCore[U,I,O,R] = {
     import Finalizer._
-    def step(up: Pipe[I,X,Any], down: Pipe[X,O,R], finUp: Finalizer): PipeCore[I,O,R] = {
+    def step(up: GenPipe[U,I,X,M], down: GenPipe[M,X,O,R], finUp: Finalizer): PipeCore[U,I,O,R] = {
       val downCore = stepPipe(down);
       val finPlus = finUp ++ downCore.finalizer;
       downCore match {
@@ -314,14 +324,14 @@ object Pipe {
           val finUp = upCore.finalizer;
           val finPlus = finUp ++ finDown;
           upCore match {
-            case Done(_)  => stepNoInput(downCore);
+            case Done(m)  => stepNoInput[M,O,R](m, downCore);
             case Delay(next, _)
                           => Delay(() => step(next(), downCore, finUp), finPlus)
             case HaveOutput(x, next, finDown1)
                           => Delay(() => step(next(), consO(x), finUp), finPlus);
             case NeedInput(consI, endI, finDown1)
                           => NeedInput((i: I) => step(consI(i), downCore, finUp),
-                                       ()     => step(stepNoInput(endI()), downCore, finUp),
+                                       (u: U) => step(stepNoInput(u, endI(u)), downCore, finUp),
                                        finPlus)
           }
         }
@@ -330,35 +340,37 @@ object Pipe {
     step(up, down, empty);
   }
 
-  private def stepNoInput[O,R](pipe: NoInput[O,R]): PipeCore[Any,O,R] =
-    stepNoInput[O,R](pipe) match {
+  private def stepNoInput[U,O,R](upResult: U, pipe: NoInput[U,O,R]): PipeCore[Any,Any,O,R] =
+    stepPipe[U,Nothing,O,R](pipe) match {
       case p@Done(_)                => p;
-      case NeedInput(_, e, fin)     => Delay(() => stepNoInput(e()), fin);
-      case HaveOutput(o, next, fin) => HaveOutput(o, () => stepNoInput(next()), fin);
-      case Delay(next, fin)         => Delay(() => stepNoInput(next()), fin);
+      case NeedInput(_, e, fin)     => Delay(() => stepNoInput(upResult, e(upResult)), fin);
+      case HaveOutput(o, next, fin) => HaveOutput(o, () => stepNoInput(upResult, next()), fin);
+      case Delay(next, fin)         => Delay(() => stepNoInput(upResult, next()), fin);
     }
 
 
-  trait Monadic[I,O,R] extends Any {
-    def flatMap[B](f: R => Pipe[I,O,B])(implicit finalizer: Finalizer): Pipe[I,O,B];
+  trait Monadic[U,I,O,R] extends Any {
+    def flatMap[B](f: R => GenPipe[U,I,O,B])(implicit finalizer: Finalizer): GenPipe[U,I,O,B];
     @inline
-    def map[B](f: R => B)(implicit finalizer: Finalizer) = flatMap((r: R) => done(f(r))): Pipe[I,O,B];
-    def >>[B](p: => Pipe[I,O,B])(implicit finalizer: Finalizer): Pipe[I,O,B];
+    def map[B](f: R => B)(implicit finalizer: Finalizer) = flatMap((r: R) => done(f(r))): GenPipe[U,I,O,B];
+    def >>[B](p: => GenPipe[U,I,O,B])(implicit finalizer: Finalizer): GenPipe[U,I,O,B];
 
-    def >->[X,B](that: Pipe[O,X,B]): Pipe[I,X,B];
-    def <-<[X](that: Pipe[X,I,_]): Pipe[X,O,R];
+    def >->[X,S](that: GenPipe[R,O,X,S]): GenPipe[U,I,X,S];
+    def <-<[X,M](that: GenPipe[M,X,I,U]): GenPipe[M,X,O,R];
   }
 
-  protected trait MonadicImpl[I,O,R] extends Any with Monadic[I,O,R] {
-    def pipe: Pipe[I,O,R];
-    @inline def flatMap[B](f: R => Pipe[I,O,B])(implicit finalizer: Finalizer) = Pipe.flatMap(pipe, f)
+  protected trait MonadicImpl[U,I,O,R] extends Any with Monadic[U,I,O,R] {
+    def pipe: GenPipe[U,I,O,R];
+    @inline def flatMap[B](f: R => GenPipe[U,I,O,B])(implicit finalizer: Finalizer) = Pipe.flatMap(pipe, f)
     //@inline def map[B](f: R => B)(implicit finalizer: Finalizer) = Pipe.map(pipe, f);
-    @inline def >>[B](p: => Pipe[I,O,B])(implicit finalizer: Finalizer): Pipe[I,O,B] = Pipe.flatMap(pipe, (_:R) => p);
+    @inline def >>[B](p: => GenPipe[U,I,O,B])(implicit finalizer: Finalizer) = Pipe.flatMap(pipe, (_:R) => p);
 
-    @inline def >->[X,B](that: Pipe[O,X,B]) = Pipe.pipe(pipe, that);
-    @inline def <-<[X](that: Pipe[X,I,_]) = Pipe.pipe(that, pipe);
+    @inline def >->[X,S](that: GenPipe[R,O,X,S]) = Pipe.pipe(pipe, that);
+    @inline def <-<[X,M](that: GenPipe[M,X,I,U]) = Pipe.pipe(that, pipe);
   }
 
-  implicit class FlatMap[I,O,R](val pipe: Pipe[I,O,R]) extends AnyVal with MonadicImpl[I,O,R];
-  implicit class FlatMapNothing[I,O](val pipe: Pipe[I,O,Nothing]) extends AnyVal with MonadicImpl[I,O,Nothing];
+  implicit class FlatMap[U,I,O,R](val pipe: GenPipe[U,I,O,R])
+    extends AnyVal with MonadicImpl[U,I,O,R];
+  implicit class FlatMapNothing[U,I,O](val pipe: GenPipe[U,I,O,Nothing])
+    extends AnyVal with MonadicImpl[U,I,O,Nothing];
 }

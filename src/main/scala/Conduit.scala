@@ -187,7 +187,9 @@ object Pipe {
   def forever[I,O](p: Pipe[I,O,_]): Pipe[I,O,Nothing] =
     andThen(p, { forever(p) })(Finalizer.empty);
 
-  def untilF[I,O,A,B](f: A => Either[Pipe[I,O,A],B], start: A, runFinalizer: Boolean = true)(implicit finalizer: Finalizer): Pipe[I,O,B] = {
+  def untilF[I,O,A,B](f: A => Either[Pipe[I,O,A],B], start: A)(implicit finalizer: Finalizer): Pipe[I,O,B] =
+    untilF[I,O,A,B](f, start, true);
+  def untilF[I,O,A,B](f: A => Either[Pipe[I,O,A],B], start: A, runFinalizer: Boolean)(implicit finalizer: Finalizer): Pipe[I,O,B] = {
     def loop(x: A): Pipe[I,O,B] =
       f(start) match {
         case Left(pipe) => flatMap(pipe, loop _);
@@ -195,6 +197,8 @@ object Pipe {
       };
     delay(loop(start));
   }
+  def untilF[I,O](pipe: => Option[Pipe[I,O,Any]])(implicit finalizer: Finalizer): Pipe[I,O,Unit] =
+    untilF[I,O](pipe, true);
   def untilF[I,O](pipe: => Option[Pipe[I,O,Any]], runFinalizer: Boolean = true)(implicit finalizer: Finalizer): Pipe[I,O,Unit] = {
     def loop(): Pipe[I,O,Unit] =
       pipe match {

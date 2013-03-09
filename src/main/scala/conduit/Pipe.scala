@@ -44,7 +44,7 @@ private final case class Delay[-I,+O,+R](next: () => Pipe[I,O,R], override val f
 // pipes: binding and fusing. They are converted into the above ones when a
 // pipe is run.
 
-private final case class Bind[-I,+O,+R,S](first: Pipe[I,O,S], then: S => Pipe[I,O,R], finalizer: Pipe.Finalizer)
+private final case class Bind[-I,+O,+R,S](first: Pipe[I,O,S], cont: S => Pipe[I,O,R], finalizer: Pipe.Finalizer)
   extends Pipe[I,O,R];
 private final case class Fuse[-I,X,+O,+R,Rr,Rl](up: Pipe[I,X,Rl], down: Pipe[X,O,Rr], merge: Either[Rl,Rr] => R)
   extends Pipe[I,O,R];
@@ -169,8 +169,8 @@ object Pipe {
     flatMap(pipe, (x: S) => done(f(x)));
 
 
-  def andThen[I,O,R](first: Pipe[I,O,_], then: => Pipe[I,O,R])(implicit finalizer: Finalizer): Pipe[I,O,R] =
-    flatMap[I,O,R,Any](first, const(then));
+  def andThen[I,O,R](first: Pipe[I,O,_], cont: => Pipe[I,O,R])(implicit finalizer: Finalizer): Pipe[I,O,R] =
+    flatMap[I,O,R,Any](first, const(cont));
 
   def forever[I,O](p: Pipe[I,O,_]): Pipe[I,O,Nothing] =
     andThen(p, { forever(p) })(Finalizer.empty);
@@ -276,15 +276,15 @@ object Pipe {
       case p@HaveOutput(o,_,_)    => p;
       case p@Delay(_,_)           => p;
       case Fuse(up, down, end)    => stepFuse(up, down, end);
-      case Bind(next, then, fin)  => stepBind(next, then, fin);
+      case Bind(next, cont, fin)  => stepBind(next, cont, fin);
     }
 
-  private def stepBind[I,O,R,S](pipe: Pipe[I,O,S], then: S => Pipe[I,O,R], fin: Finalizer): PipeCore[I,O,R] =
+  private def stepBind[I,O,R,S](pipe: Pipe[I,O,S], cont: S => Pipe[I,O,R], fin: Finalizer): PipeCore[I,O,R] =
     stepPipe(pipe) match {
-      case Done(s)                    => Delay(() => then(s), fin)
-      case NeedInput(cons, finI)      => NeedInput(i => stepBind(cons(i), then, fin), finI)
-      case HaveOutput(o, next, finO)  => HaveOutput(o, () => stepBind(next(), then, fin), finO)
-      case Delay(pipe, finD)          => Delay(() => stepBind(pipe(), then, fin), finD)
+      case Done(s)                    => Delay(() => cont(s), fin)
+      case NeedInput(cons, finI)      => NeedInput(i => stepBind(cons(i), cont, fin), finI)
+      case HaveOutput(o, next, finO)  => HaveOutput(o, () => stepBind(next(), cont, fin), finO)
+      case Delay(pipe, finD)          => Delay(() => stepBind(pipe(), cont, fin), finD)
     }
 
   private def stepFuse[I,X,O,Ru,Rd,R](up: Pipe[I,X,Ru], down: Pipe[X,O,Rd], end: Either[Ru,Rd] => R): PipeCore[I,O,R] = {
@@ -318,16 +318,30 @@ object Pipe {
   }
 
 
+  trait Monadic[I,O,R] extends Any {
+    def flatMap[B](f: R => Pipe[I,O,B])(implicit finalizer: Finalizer): Pipe[I,O,B];
+    @inline
+    def map[B](f: R => B)(implicit finalizer: Finalizer) = flatMap((r: R) => done(f(r))): Pipe[I,O,B];
+    def >>[B](p: => Pipe[I,O,B])(implicit finalizer: Finalizer): Pipe[I,O,B];
 
-  //implicit def pipeFlatMap[I,O,A](pipe: Pipe[I,O,A])(implicit finalizer: Finalizer) = new AnyVal {
-  implicit class FlatMap[I,O,R](val pipe: Pipe[I,O,R]) extends AnyVal {
+    def >->[X](that: Pipe[O,X,R])(implicit finalizer: Finalizer): Pipe[I,X,R];
+    def <-<[X](that: Pipe[X,I,R])(implicit finalizer: Finalizer): Pipe[X,O,R];
+
+    def forever(implicit finalizer: Finalizer): Pipe[I,O,Nothing];
+  }
+
+  protected trait MonadicImpl[I,O,R] extends Any with Monadic[I,O,R] {
+    def pipe: Pipe[I,O,R];
     @inline def flatMap[B](f: R => Pipe[I,O,B])(implicit finalizer: Finalizer) = Pipe.flatMap(pipe, f)
-    @inline def map[B](f: R => B)(implicit finalizer: Finalizer) = flatMap((r: R) => done(f(r)));
-    @inline def >>[B](p: => Pipe[I,O,B])(implicit finalizer: Finalizer): Pipe[I,O,B] = flatMap(_ => p);
+    //@inline def map[B](f: R => B)(implicit finalizer: Finalizer) = Pipe.map(pipe, f);
+    @inline def >>[B](p: => Pipe[I,O,B])(implicit finalizer: Finalizer): Pipe[I,O,B] = Pipe.flatMap(pipe, (_:R) => p);
 
     @inline def >->[X](that: Pipe[O,X,R])(implicit finalizer: Finalizer) = Pipe.pipe(pipe, that);
     @inline def <-<[X](that: Pipe[X,I,R])(implicit finalizer: Finalizer) = Pipe.pipe(that, pipe);
 
     @inline def forever(implicit finalizer: Finalizer): Pipe[I,O,Nothing] = Pipe.forever(pipe);
   }
+
+  implicit class FlatMap[I,O,R](val pipe: Pipe[I,O,R]) extends AnyVal with MonadicImpl[I,O,R];
+  implicit class FlatMapNothing[I,O](val pipe: Pipe[I,O,Nothing]) extends AnyVal with MonadicImpl[I,O,Nothing];
 }

@@ -11,7 +11,7 @@ object IO {
 
   lazy val readLinesFile: Pipe[File,String,Nothing] = {
     import Finalizer.empty
-    pipe(mapP((f: File) => new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8"))), readLines);
+    mapP((f: File) => new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8"))) >-> readLines
   }
     //arrP((f: File) => new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8"))) >-> readLines;
 
@@ -23,8 +23,10 @@ object IO {
     untilF[Any,String](Option(r.readLine).map(respond[String] _));
   }
 
-  implicit def bufferedReaderToSource(r: BufferedReader) = new SourceLike[String] {
-    override def toSource = readLines(r);
+  implicit class BufferedReaderToSource(val reader: BufferedReader)
+    extends AnyVal with SourceLike[String]
+  {
+    override def toSource = readLines(reader);
   }
 
 

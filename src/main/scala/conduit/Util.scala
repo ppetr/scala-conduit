@@ -33,14 +33,15 @@ object Util {
   //def toCol[A,O,C <: Growable[A]](c: C): Pipe[A,O,C] =
 
 
-  trait SourceLike[+O] {
+  trait SourceLike[+O] extends Any {
+    this: AnyVal =>
     def toSource: Pipe[Any,O,Unit];
   }
-  trait SinkLike[-I] {
+  trait SinkLike[-I] extends Any {
     def toSink: Pipe[I,Nothing,Nothing];
   }
 
-  implicit def iterableToSource[A](it: Iterable[A]) = new SourceLike[A] {
-    override def toSource = fromIterable(it);
+  implicit class IterableToSource[A](val iterable: Iterable[A]) extends AnyVal with SourceLike[A] {
+    override def toSource = fromIterable(iterable);
   }
 }

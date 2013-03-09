@@ -9,7 +9,7 @@ object NIO {
   import IO._;
   import Util._;
 
-  def readChannel(buf: ByteBuffer, c: ReadableByteChannel): Pipe[Any,ByteBuffer,Unit] = {
+  def readChannel(buf: ByteBuffer, c: ReadableByteChannel): Source[ByteBuffer,Unit] = {
     implicit val fin = Finalizer({ c.close() });
     untilF[Any,ByteBuffer]({
         buf.clear();
@@ -19,7 +19,7 @@ object NIO {
       });
   }
 
-  def readFile(file: File, buf: ByteBuffer): Pipe[Any,ByteBuffer,Unit] =
+  def readFile(file: File, buf: ByteBuffer): Source[ByteBuffer,Unit] =
     delay {
       implicit val is = new FileInputStream(file);
       readChannel(buf, is.getChannel());
@@ -36,13 +36,13 @@ object NIO {
     loop();
   }
 
-  def writeChannel(c: WritableByteChannel): Pipe[ByteBuffer,Nothing,Unit] = {
-    def loop(): Pipe[ByteBuffer,Nothing,Unit] =
+  def writeChannel(c: WritableByteChannel): Sink[ByteBuffer,Unit] = {
+    def loop(): Sink[ByteBuffer,Unit] =
       requestU((buf: ByteBuffer) => { c.write(buf); loop(); })(closeFin(c));
     loop();
   }
 
-  def writeFile(file: File): Pipe[ByteBuffer,Nothing,Any] =
+  def writeFile(file: File): Sink[ByteBuffer,Any] =
     delay {
       implicit val os = new FileOutputStream(file);
       writeChannel(os.getChannel());
@@ -60,12 +60,12 @@ object NIO {
     loop();
   }
 
-  def list(dir: File): Pipe[Any,File,Unit] =
+  def list(dir: File): Source[File,Unit] =
     Util.fromIterable(
       dir.listFiles(new FileFilter { def accept(f: File) = f.isFile; })
     );
 
-  def listRec(dir: File): Pipe[Any,File,Unit] =
+  def listRec(dir: File): Source[File,Unit] =
   {
     import Util._;
     import Finalizer.empty
@@ -84,7 +84,7 @@ object NIO {
     import Util._;
     import Finalizer.empty
 
-    val log: Pipe[String,Nothing,Unit] =
+    val log: Sink[String,Unit] =
       writeLines(new OutputStreamWriter(System.out));
 
     val pipe =

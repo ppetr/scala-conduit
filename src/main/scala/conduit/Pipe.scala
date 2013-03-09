@@ -30,7 +30,7 @@ private sealed trait PipeCore[-I,+O,+R] extends Pipe[I,O,R] {
 
 private final case class HaveOutput[-I,+O,+R](output: O, next: () => Pipe[I,O,R], override val finalizer: Pipe.Finalizer)
   extends PipeCore[I,O,R];
-private final case class NeedInput[-I,+O,+R](consume: I => Pipe[I,O,R], noInput: () => Pipe[Nothing,O,R], override val finalizer: Pipe.Finalizer)
+private final case class NeedInput[-I,+O,+R](consume: I => Pipe[I,O,R], noInput: () => Pipe.NoInput[O,R], override val finalizer: Pipe.Finalizer)
   extends PipeCore[I,O,R];
 private final case class Done[+R](result: R)
   extends PipeCore[Any,Nothing,R] {
@@ -108,8 +108,13 @@ object Pipe {
       fin.run(None);
   }
 
+
+  type Sink[-I,+R] = Pipe[I,Nothing,R]
+  type Source[+O,+R] = Pipe[Any,O,R]
+  type NoInput[+O,+R] = Pipe[Nothing,O,R]
+
   @inline
-  protected val nextDone: () => Pipe[Any,Nothing,Unit] = () => done;
+  protected val nextDone: () => Source[Nothing,Unit] = () => done;
   protected def const[A](body: => A): Any => A =
     (_) => body;
 
@@ -117,17 +122,17 @@ object Pipe {
    * Returns a pipe that does nothing and returns <code>()</code>.
    */
   @inline
-  val done: Pipe[Any,Nothing,Unit] = done(());
+  val done: Source[Nothing,Unit] = done(());
   /**
    * Returns a pipe that just returns the given result.
    */
   @inline
-  def done[R](result: R): Pipe[Any,Nothing,R] = Done(result);
+  def done[R](result: R): Source[Nothing,R] = Done(result);
   /**
    * Returns a pipe that runs the given finalizer and then returns the given result.
    */
   @inline
-  def finishF[R](result: R, fin: Finalizer): Pipe[Any,Nothing,R] = {
+  def finishF[R](result: R, fin: Finalizer): Source[Nothing,R] = {
     Finalizer.run(fin);
     Done(result);
   }
@@ -137,10 +142,10 @@ object Pipe {
     Delay(() => inner, finalizer);
 
   @inline
-  def request[I]: Pipe[I,Nothing,Option[I]] =
+  def request[I]: Sink[I,Option[I]] =
     requestOpt((i: Option[I]) => Done(i))(Finalizer.empty);
   @inline
-  def request[I,O,R](cont: I => Pipe[I,O,R], end: => Pipe[Any,O,R])(implicit finalizer: Finalizer): Pipe[I,O,R] =
+  def request[I,O,R](cont: I => Pipe[I,O,R], end: => Source[O,R])(implicit finalizer: Finalizer): Pipe[I,O,R] =
     NeedInput(cont, () => end, finalizer);
   def requestOpt[I,O,R](cont: Option[I] => Pipe[I,O,R])(implicit finalizer: Finalizer): Pipe[I,O,R] =
     NeedInput((i: I) => cont(Some(i)), () => cont(None), finalizer);
@@ -154,7 +159,7 @@ object Pipe {
   def respond[I,O,R](o: O, cont: => Pipe[I,O,R])(implicit finalizer: Finalizer): Pipe[I,O,R] =
     HaveOutput(o, () => cont, finalizer);
   @inline
-  def respond[O](o: O)(implicit finalizer: Finalizer): Pipe[Any,O,Unit] =
+  def respond[O](o: O)(implicit finalizer: Finalizer): Source[O,Unit] =
     HaveOutput(o, () => done, finalizer);
 
 /*
@@ -162,7 +167,7 @@ object Pipe {
   def leftover[I,O,R](left: I, pipe: => Pipe[I,O,R]): Pipe[I,O,R] =
     Leftover(left, pipe);
   @inline
-  def leftover[I](left: I): Pipe[I,Nothing,Unit] =
+  def leftover[I](left: I): Sink[I,Unit] =
     Leftover(left, nextDone);
 */
 
@@ -217,7 +222,7 @@ object Pipe {
 
 
   @inline
-  def blockInput[O,R](p: Pipe[Nothing,O,R]): Pipe[Any,O,R] =
+  def blockInput[O,R](p: NoInput[O,R]): Source[O,R] =
     pipe(done, p);
  
 
@@ -226,11 +231,11 @@ object Pipe {
    * they're terminated.
    */
   @inline
-  def unfold[I,O](f: I => Pipe[Nothing,O,Any])(implicit finalizer: Finalizer): Pipe[I,O,Unit] =
+  def unfold[I,O](f: I => NoInput[O,Any])(implicit finalizer: Finalizer): Pipe[I,O,Unit] =
     requestU[I,O](i => andThen(blockInput(f(i)), unfold(f)));
 
-  def repeat[O](produce: => O)(implicit finalizer: Finalizer): Pipe[Any,O,Nothing] = {
-    def loop(): Pipe[Any,O,Nothing]
+  def repeat[O](produce: => O)(implicit finalizer: Finalizer): Source[O,Nothing] = {
+    def loop(): Source[O,Nothing]
       = respond(produce, loop());
     delay { loop() }
   }
@@ -258,10 +263,10 @@ object Pipe {
     extends Leftover[Nothing,R];
 
 
-  def runPipe[R](pipe: Pipe[Nothing,Nothing,R]): R = {
+  def runPipe[R](pipe: Sink[Nothing,R]): R = {
     import Finalizer._
     @tailrec
-    def step[R](pipe: Pipe[Nothing,Nothing,R]): R = {
+    def step[R](pipe: Sink[Nothing,R]): R = {
       stepPipe[Nothing,Nothing,R](pipe) match {
         case Done(r)                  => r;
         case HaveOutput(o, _, _)      => o; // Never occurs - o is Nothing so it can be typed to anything.
@@ -325,8 +330,8 @@ object Pipe {
     step(up, down, empty);
   }
 
-  private def stepNoInput[O,R](pipe: Pipe[Nothing,O,R]): PipeCore[Any,O,R] =
-    stepPipe[Nothing,O,R](pipe) match {
+  private def stepNoInput[O,R](pipe: NoInput[O,R]): PipeCore[Any,O,R] =
+    stepNoInput[O,R](pipe) match {
       case p@Done(_)                => p;
       case NeedInput(_, e, fin)     => Delay(() => stepNoInput(e()), fin);
       case HaveOutput(o, next, fin) => HaveOutput(o, () => stepNoInput(next()), fin);

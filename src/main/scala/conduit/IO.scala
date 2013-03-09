@@ -18,7 +18,7 @@ object IO {
   lazy val readLines: Pipe[BufferedReader,String,Unit] =
     unfold[BufferedReader,String](readLines _);
 
-  def readLines(r: BufferedReader): Pipe[Any,String,Unit] = {
+  def readLines(r: BufferedReader): Source[String,Unit] = {
     implicit val fin = closeFin(r);
     untilF[Any,String](Option(r.readLine).map(respond[String] _));
   }
@@ -30,11 +30,11 @@ object IO {
   }
 
 
-  def writeLines(w: Writer): Pipe[String,Nothing,Unit] = {
+  def writeLines(w: Writer): Sink[String,Unit] = {
     implicit val fin = closeFin(w);
     def read(x: String) =
       { w.write(x); w.write('\n'); w.flush(); loop() }
-    def loop(): Pipe[String,Nothing,Unit] =
+    def loop(): Sink[String,Unit] =
       requestE(read _, { System.err.println("Input finished."); Finalizer.run(fin) })
     loop();
   }

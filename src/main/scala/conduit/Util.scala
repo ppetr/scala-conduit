@@ -6,7 +6,7 @@ object Util {
   import Pipe._;
 
   implicit class ImplicitAsPipe[O](val value: O) extends AnyVal {
-    def asPipe: Pipe[Any,O,Unit] = respond[O](value)(Finalizer.empty);
+    def asPipe: Source[O,Unit] = respond[O](value)(Finalizer.empty);
   }
 
   def filter[A](p: A => Boolean): Pipe[A,A,Unit] = {
@@ -17,10 +17,10 @@ object Util {
   }
  
 
-  def fromSeq[A](values: A*): Pipe[Any,A,Unit] = fromIterable(values);
-  def fromIterable[A](i : Iterable[A]): Pipe[Any,A,Unit]
+  def fromSeq[A](values: A*): Source[A,Unit] = fromIterable(values);
+  def fromIterable[A](i : Iterable[A]): Source[A,Unit]
     = fromIterator(i.iterator);
-  def fromIterator[A](i : Iterator[A]): Pipe[Any,A,Unit] = {
+  def fromIterator[A](i : Iterator[A]): Source[A,Unit] = {
     import Finalizer.empty
     untilF(if (i.hasNext) Some(respond[A](i.next())) else None);
   }
@@ -35,10 +35,10 @@ object Util {
 
   trait SourceLike[+O] extends Any {
     this: AnyVal =>
-    def toSource: Pipe[Any,O,Unit];
+    def toSource: Source[O,Unit];
   }
   trait SinkLike[-I] extends Any {
-    def toSink: Pipe[I,Nothing,Unit];
+    def toSink: Sink[I,Unit];
   }
 
   implicit class IterableToSource[A](val iterable: Iterable[A]) extends AnyVal with SourceLike[A] {

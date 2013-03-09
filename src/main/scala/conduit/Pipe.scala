@@ -319,14 +319,15 @@ object Pipe {
 
 
 
-  implicit def pipeFlatMap[I,O,A](pipe: Pipe[I,O,A])(implicit finalizer: Finalizer) = new {
-    @inline def flatMap[B](f: A => Pipe[I,O,B]) = Pipe.flatMap(pipe, f)
-    @inline def map[B](f: A => B) = flatMap((r: A) => done(f(r)));
-    @inline def >>[B](p: => Pipe[I,O,B]): Pipe[I,O,B] = flatMap(_ => p);
+  //implicit def pipeFlatMap[I,O,A](pipe: Pipe[I,O,A])(implicit finalizer: Finalizer) = new AnyVal {
+  implicit class FlatMap[I,O,R](val pipe: Pipe[I,O,R]) extends AnyVal {
+    @inline def flatMap[B](f: R => Pipe[I,O,B])(implicit finalizer: Finalizer) = Pipe.flatMap(pipe, f)
+    @inline def map[B](f: R => B)(implicit finalizer: Finalizer) = flatMap((r: R) => done(f(r)));
+    @inline def >>[B](p: => Pipe[I,O,B])(implicit finalizer: Finalizer): Pipe[I,O,B] = flatMap(_ => p);
 
-    @inline def >->[X](that: Pipe[O,X,A]) = Pipe.pipe(pipe, that);
-    @inline def <-<[X](that: Pipe[X,I,A]) = Pipe.pipe(that, pipe);
+    @inline def >->[X](that: Pipe[O,X,R])(implicit finalizer: Finalizer) = Pipe.pipe(pipe, that);
+    @inline def <-<[X](that: Pipe[X,I,R])(implicit finalizer: Finalizer) = Pipe.pipe(that, pipe);
 
-    @inline def forever: Pipe[I,O,Nothing] = Pipe.forever(pipe);
+    @inline def forever(implicit finalizer: Finalizer): Pipe[I,O,Nothing] = Pipe.forever(pipe);
   }
 }

@@ -5,7 +5,7 @@ import scala.collection.generic.Growable
 object Util {
   import Pipe._;
 
-  implicit def implicitAsPipe[O](value: O) = new {
+  implicit class ImplicitAsPipe[O](val value: O) extends AnyVal {
     def asPipe: Pipe[Any,O,Unit] = respond[O](value)(Finalizer.empty);
   }
 

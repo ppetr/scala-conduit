@@ -24,17 +24,19 @@ object PipeNIO {
 
   def readFiles(buf: ByteBuffer): Pipe[File,ByteBuffer,Unit] = {
     import Finalizer.empty
-    unfold[File,ByteBuffer,Unit](f => readFile(f, buf));
+    unfold[File,ByteBuffer](f => readFile(f, buf));
   }
 
-  def writeToOutputStream(os: OutputStream): Pipe[Array[Byte],Nothing,Any] = {
-    implicit val fin = closeFin(os);
-    forever(request((buf: Array[Byte]) => finish(os.write(buf))));
+  def writeToOutputStream(os: OutputStream): Pipe[Array[Byte],Nothing,Unit] = {
+    def loop(): Pipe[Array[Byte],Nothing,Unit] =
+      requestU((buf: Array[Byte]) => { os.write(buf); loop() })(closeFin(os));
+    loop();
   }
 
-  def writeChannel(c: WritableByteChannel): Pipe[ByteBuffer,Nothing,Any] = {
-    implicit val fin = closeFin(c)
-    forever(request((buf: ByteBuffer) => finish(c.write(buf))));
+  def writeChannel(c: WritableByteChannel): Pipe[ByteBuffer,Nothing,Unit] = {
+    def loop(): Pipe[ByteBuffer,Nothing,Unit] =
+      requestU((buf: ByteBuffer) => { c.write(buf); loop(); })(closeFin(c));
+    loop();
   }
 
   def writeFile(file: File): Pipe[ByteBuffer,Nothing,Any] =
@@ -48,9 +50,11 @@ object PipeNIO {
    * (<code>hasRemaining()</code> returns <code>false</code>) before requesting
    * upstream a new buffer.
    */
-  def leftovers[B <: Buffer]: Pipe[B,B,Nothing] = {
-    import Finalizer.empty
-    request((b: B) => until { if (b.hasRemaining()) Some(respond(b)) else None }).forever;
+  def leftovers[B <: Buffer]: Pipe[B,B,Unit] = {
+    import Finalizer.empty;
+    def loop(): Pipe[B,B,Unit] =
+      requestU[B,B](b => until[B,B] { if (b.hasRemaining()) Some(respond(b)) else None } >> loop());
+    loop();
   }
 
   def list(dir: File): Pipe[Any,File,Unit] =
@@ -77,7 +81,7 @@ object PipeNIO {
     import PipeUtil._;
     import Finalizer.empty
 
-    val log: Pipe[String,Nothing,Nothing] =
+    val log: Pipe[String,Nothing,Unit] =
       writeLines(new OutputStreamWriter(System.out));
 
     val pipe =

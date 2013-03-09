@@ -11,10 +11,10 @@ object PipeUtil {
     def asPipe: Pipe[Any,O,Unit] = respond[O](value)(Finalizer.empty);
   }
 
-  def filter[A](p: A => Boolean): Pipe[A,A,Nothing] = {
+  def filter[A](p: A => Boolean): Pipe[A,A,Unit] = {
     import Finalizer.empty
-    def loop: Pipe[A,A,Nothing] =
-      request[A].asO[A].flatMap(x => if (p(x)) (respond(x).as[A,A] >> loop) else loop);
+    def loop: Pipe[A,A,Unit] =
+      requestU[A,A](x => if (p(x)) (respond(x).as[A,A] >> loop) else loop);
     loop;
   }
   /*
@@ -28,22 +28,26 @@ object PipeUtil {
     });
   */
 
-  lazy val readLinesFile: Pipe[File,String,Nothing] = {
+  lazy val readLinesFile: Pipe[File,String,Unit] = {
     import Finalizer.empty
     pipe(mapP((f: File) => new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8"))), readLines);
   }
     //arrP((f: File) => new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8"))) >-> readLines;
-  lazy val readLines: Pipe[BufferedReader,String,Nothing] =
-    unfold[BufferedReader,String,Unit](readLines _);
+  lazy val readLines: Pipe[BufferedReader,String,Unit] =
+    unfold[BufferedReader,String](readLines _);
 
   def readLines(r: BufferedReader): Pipe[Any,String,Unit] = {
     implicit val fin = closeFin(r);
     until[Any,String](Option(r.readLine).map(respond[String] _));
   }
 
-  def writeLines(w: Writer): Pipe[String,Nothing,Nothing] = {
-    implicit val fin = closeFin(w)
-    forever(request((x: String) => { w.write(x); w.write('\n'); w.flush(); finish; }));
+  def writeLines(w: Writer): Pipe[String,Nothing,Unit] = {
+    implicit val fin = closeFin(w);
+    def read(x: String) =
+      { w.write(x); w.write('\n'); w.flush(); loop() }
+    def loop(): Pipe[String,Nothing,Unit] =
+      requestE(read _, { System.err.println("Input finished."); Finalizer.run(fin) })
+    loop();
   }
  
 
@@ -55,10 +59,10 @@ object PipeUtil {
     until(if (i.hasNext) Some(respond[A](i.next())) else None);
   }
 
-  def fromIterable[A]: Pipe[Iterable[A],A,Any] =
-    unfold[Iterable[A],A,Unit](i => fromIterable(i));
-  def fromIterator[A]: Pipe[Iterator[A],A,Any] =
-    unfold[Iterator[A],A,Unit](i => fromIterator(i));
+  def fromIterable[A]: Pipe[Iterable[A],A,Unit] =
+    unfold[Iterable[A],A](i => fromIterable(i));
+  def fromIterator[A]: Pipe[Iterator[A],A,Unit] =
+    unfold[Iterator[A],A](i => fromIterator(i));
 
   //def toCol[A,O,C <: Growable[A]](c: C): Pipe[A,O,C] =
 

@@ -89,7 +89,7 @@ object NIO {
 
     val pipe =
       listRec(new File(".")) >->
-        filter(_.getName().endsWith(".scala")) >->
+        filter[File](_.getName().endsWith(".scala")) >->
         readLinesFile >->
         log;
 

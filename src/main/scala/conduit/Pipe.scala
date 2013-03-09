@@ -24,7 +24,7 @@ sealed trait Pipe[-I,+O,+R]
  * primitives, covered by <code>PipeCode</code>. It only allows input, output,
  * delay and producing the final result.
  */
-private trait PipeCore[-I,+O,+R] extends Pipe[I,O,R] {
+private sealed trait PipeCore[-I,+O,+R] extends Pipe[I,O,R] {
   def finalizer: Pipe.Finalizer;
 }
 
@@ -43,7 +43,7 @@ private final case class Delay[-I,+O,+R](next: () => Pipe[I,O,R], override val f
 // pipes: binding and fusing. They are converted into the above ones when a
 // pipe is run.
 
-private final case class Bind[-I,+O,+R,S](first: Pipe[I,O,S], then: S => Pipe[I,O,R], finalizer: Pipe.Finalizer)
+private final case class Bind[-I,+O,+R,S](first: Pipe[I,O,S], cont: S => Pipe[I,O,R], finalizer: Pipe.Finalizer)
   extends Pipe[I,O,R];
 private final case class Fuse[-I,X,+O,+R](up: Pipe[I,X,Any], down: Pipe[X,O,R])
   extends Pipe[I,O,R];
@@ -175,8 +175,8 @@ object Pipe {
     flatMap(pipe, (x: S) => done(f(x)));
 
 
-  def andThen[I,O,R](first: Pipe[I,O,_], then: => Pipe[I,O,R])(implicit finalizer: Finalizer): Pipe[I,O,R] =
-    flatMap[I,O,R,Any](first, const(then));
+  def andThen[I,O,R](first: Pipe[I,O,_], cont: => Pipe[I,O,R])(implicit finalizer: Finalizer): Pipe[I,O,R] =
+    flatMap[I,O,R,Any](first, const(cont));
 
   def untilF[I,O,A,B](f: A => Either[Pipe[I,O,A],B], start: A)(implicit finalizer: Finalizer): Pipe[I,O,B] =
     untilF[I,O,A,B](f, start, true);
@@ -280,17 +280,17 @@ object Pipe {
       case p@HaveOutput(o,_,_)    => p;
       case p@Delay(_,_)           => p;
       case Fuse(up, down)         => stepFuse(up, down);
-      case Bind(next, then, fin)  => stepBind(next, then, fin);
+      case Bind(next, cont, fin)  => stepBind(next, cont, fin);
     }
 
-  private def stepBind[I,O,R,S](pipe: Pipe[I,O,S], then: S => Pipe[I,O,R], fin: Finalizer): PipeCore[I,O,R] =
+  private def stepBind[I,O,R,S](pipe: Pipe[I,O,S], cont: S => Pipe[I,O,R], fin: Finalizer): PipeCore[I,O,R] =
     stepPipe(pipe) match {
-      case Done(s)                    => Delay(() => then(s), fin)
-      case NeedInput(cons, end, finI) => NeedInput(i  => stepBind(cons(i), then, fin),
-                                                   () => stepBind(stepNoInput(end()), then, fin),
+      case Done(s)                    => Delay(() => cont(s), fin)
+      case NeedInput(cons, end, finI) => NeedInput(i  => stepBind(cons(i), cont, fin),
+                                                   () => stepBind(stepNoInput(end()), cont, fin),
                                                    finI)
-      case HaveOutput(o, next, finO)  => HaveOutput(o, () => stepBind(next(), then, fin), finO)
-      case Delay(pipe, finD)          => Delay(() => stepBind(pipe(), then, fin), finD)
+      case HaveOutput(o, next, finO)  => HaveOutput(o, () => stepBind(next(), cont, fin), finO)
+      case Delay(pipe, finD)          => Delay(() => stepBind(pipe(), cont, fin), finD)
     }
 
   private def stepFuse[I,X,O,R](up: Pipe[I,X,Any], down: Pipe[X,O,R]): PipeCore[I,O,R] = {
@@ -334,13 +334,26 @@ object Pipe {
     }
 
 
+  trait Monadic[I,O,R] extends Any {
+    def flatMap[B](f: R => Pipe[I,O,B])(implicit finalizer: Finalizer): Pipe[I,O,B];
+    @inline
+    def map[B](f: R => B)(implicit finalizer: Finalizer) = flatMap((r: R) => done(f(r))): Pipe[I,O,B];
+    def >>[B](p: => Pipe[I,O,B])(implicit finalizer: Finalizer): Pipe[I,O,B];
 
-  implicit def pipeFlatMap[I,O,A](pipe: Pipe[I,O,A])(implicit finalizer: Finalizer) = new {
-    @inline def flatMap[B](f: A => Pipe[I,O,B]) = Pipe.flatMap(pipe, f)
-    @inline def map[B](f: A => B) = flatMap((r: A) => done(f(r)));
-    @inline def >>[B](p: => Pipe[I,O,B]): Pipe[I,O,B] = flatMap(_ => p);
-
-    @inline def >->[X](that: Pipe[O,X,A]) = Pipe.pipe(pipe, that);
-    @inline def <-<[X](that: Pipe[X,I,A]) = Pipe.pipe(that, pipe);
+    def >->[X,B](that: Pipe[O,X,B]): Pipe[I,X,B];
+    def <-<[X](that: Pipe[X,I,_]): Pipe[X,O,R];
   }
+
+  protected trait MonadicImpl[I,O,R] extends Any with Monadic[I,O,R] {
+    def pipe: Pipe[I,O,R];
+    @inline def flatMap[B](f: R => Pipe[I,O,B])(implicit finalizer: Finalizer) = Pipe.flatMap(pipe, f)
+    //@inline def map[B](f: R => B)(implicit finalizer: Finalizer) = Pipe.map(pipe, f);
+    @inline def >>[B](p: => Pipe[I,O,B])(implicit finalizer: Finalizer): Pipe[I,O,B] = Pipe.flatMap(pipe, (_:R) => p);
+
+    @inline def >->[X,B](that: Pipe[O,X,B]) = Pipe.pipe(pipe, that);
+    @inline def <-<[X](that: Pipe[X,I,_]) = Pipe.pipe(that, pipe);
+  }
+
+  implicit class FlatMap[I,O,R](val pipe: Pipe[I,O,R]) extends AnyVal with MonadicImpl[I,O,R];
+  implicit class FlatMapNothing[I,O](val pipe: Pipe[I,O,Nothing]) extends AnyVal with MonadicImpl[I,O,Nothing];
 }

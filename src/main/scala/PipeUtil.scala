@@ -38,7 +38,7 @@ object PipeUtil {
 
   def readLines(r: BufferedReader): Pipe[Any,String,Unit] = {
     implicit val fin = closeFin(r);
-    until[Any,String](Option(r.readLine).map(respond[String] _));
+    untilF[Any,String](Option(r.readLine).map(respond[String] _));
   }
 
   def writeLines(w: Writer): Pipe[String,Nothing,Unit] = {
@@ -56,7 +56,7 @@ object PipeUtil {
     = fromIterator(i.iterator);
   def fromIterator[A](i : Iterator[A]): Pipe[Any,A,Unit] = {
     import Finalizer.empty
-    until(if (i.hasNext) Some(respond[A](i.next())) else None);
+    untilF(if (i.hasNext) Some(respond[A](i.next())) else None);
   }
 
   def fromIterable[A]: Pipe[Iterable[A],A,Unit] =

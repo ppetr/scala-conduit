@@ -139,7 +139,7 @@ object Pipe {
    * Returns a pipe that runs the given finalizer and then returns the given result.
    */
   @inline
-  def finish[R](result: R, fin: Finalizer): Pipe[Any,Nothing,R] = {
+  def finishF[R](result: R, fin: Finalizer): Pipe[Any,Nothing,R] = {
     Finalizer.run(fin);
     Done(result);
   }
@@ -190,19 +190,23 @@ object Pipe {
   def andThen[I,O,R](first: Pipe[I,O,_], then: => Pipe[I,O,R])(implicit finalizer: Finalizer): Pipe[I,O,R] =
     flatMap[I,O,R,Any](first, const(then));
 
-  def until[I,O,A,B](f: A => Either[Pipe[I,O,A],B], start: A)(implicit finalizer: Finalizer): Pipe[I,O,B] = {
+  def untilF[I,O,A,B](f: A => Either[Pipe[I,O,A],B], start: A)(implicit finalizer: Finalizer): Pipe[I,O,B] =
+    untilF[I,O,A,B](f, start, true);
+  def untilF[I,O,A,B](f: A => Either[Pipe[I,O,A],B], start: A, runFinalizer: Boolean)(implicit finalizer: Finalizer): Pipe[I,O,B] = {
     def loop(x: A): Pipe[I,O,B] =
       f(start) match {
         case Left(pipe) => flatMap(pipe, loop _);
-        case Right(b)   => Finalizer.run; finish(b);
+        case Right(b)   => if (runFinalizer) Finalizer.run; finish(b);
       };
     delay(loop(start));
   }
-  def until[I,O](pipe: => Option[Pipe[I,O,Any]])(implicit finalizer: Finalizer): Pipe[I,O,Unit] = {
+  def untilF[I,O](pipe: => Option[Pipe[I,O,Any]])(implicit finalizer: Finalizer): Pipe[I,O,Unit] =
+    untilF[I,O](pipe, true);
+  def untilF[I,O](pipe: => Option[Pipe[I,O,Any]], runFinalizer: Boolean = true)(implicit finalizer: Finalizer): Pipe[I,O,Unit] = {
     def loop(): Pipe[I,O,Unit] =
       pipe match {
         case Some(pipe) => andThen(pipe, loop());
-        case None       => Finalizer.run; finish;
+        case None       => if (runFinalizer) Finalizer.run; finish;
       }
     delay { loop() }
   }

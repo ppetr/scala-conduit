@@ -8,7 +8,7 @@ object PipeNIO {
 
   def readChannel(buf: ByteBuffer, c: ReadableByteChannel): Pipe[Any,ByteBuffer,Unit] = {
     implicit val fin = Finalizer({ c.close() });
-    until[Any,ByteBuffer]({
+    untilF[Any,ByteBuffer]({
         buf.clear();
         val i = c.read(buf);
         if (i < 0) None;
@@ -53,7 +53,7 @@ object PipeNIO {
   def leftovers[B <: Buffer]: Pipe[B,B,Unit] = {
     import Finalizer.empty;
     def loop(): Pipe[B,B,Unit] =
-      requestU[B,B](b => until[B,B] { if (b.hasRemaining()) Some(respond(b)) else None } >> loop());
+      requestU[B,B](b => untilF[B,B] { if (b.hasRemaining()) Some(respond(b)) else None } >> loop());
     loop();
   }
 

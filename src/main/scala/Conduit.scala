@@ -106,20 +106,6 @@ object Pipe {
       fin.run(None);
   }
 
-  type Catcher[+A] = Exception.Catcher[A];
-  private object Catcher {
-    def map[A,B](f: A => B, c: Catcher[A]): Catcher[B] =
-      c andThen f;
-
-    val empty: Catcher[Nothing] = new PartialFunction[Any,Nothing] {
-      override def isDefinedAt(x: Any): Boolean = false;
-      override def apply(x: Any): Nothing = throw new RuntimeException("undefined");
-    };
-    @inline
-    def protect[R](catching: Catcher[R], body: => R): R =
-      body; // TODO catching(body);
-  }
-
   @inline
   protected val nextDone: () => Pipe[Any,Nothing,Unit] = () => finish;
   protected def const[A](body: => A): Any => A =

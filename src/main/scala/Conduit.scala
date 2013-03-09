@@ -140,7 +140,7 @@ object Pipe {
    * Returns a pipe that runs the given finalizer and then returns the given result.
    */
   @inline
-  def finish[R](result: R, fin: Finalizer): Pipe[Any,Nothing,R] = {
+  def finishF[R](result: R, fin: Finalizer): Pipe[Any,Nothing,R] = {
     Finalizer.run(fin);
     Done(result);
   }
@@ -187,19 +187,19 @@ object Pipe {
   def forever[I,O](p: Pipe[I,O,_]): Pipe[I,O,Nothing] =
     andThen(p, { forever(p) })(Finalizer.empty);
 
-  def until[I,O,A,B](f: A => Either[Pipe[I,O,A],B], start: A)(implicit finalizer: Finalizer): Pipe[I,O,B] = {
+  def untilF[I,O,A,B](f: A => Either[Pipe[I,O,A],B], start: A, runFinalizer: Boolean = true)(implicit finalizer: Finalizer): Pipe[I,O,B] = {
     def loop(x: A): Pipe[I,O,B] =
       f(start) match {
         case Left(pipe) => flatMap(pipe, loop _);
-        case Right(b)   => Finalizer.run; finish(b);
+        case Right(b)   => if (runFinalizer) Finalizer.run; finish(b);
       };
     delay(loop(start));
   }
-  def until[I,O](pipe: => Option[Pipe[I,O,Any]])(implicit finalizer: Finalizer): Pipe[I,O,Unit] = {
+  def untilF[I,O](pipe: => Option[Pipe[I,O,Any]], runFinalizer: Boolean = true)(implicit finalizer: Finalizer): Pipe[I,O,Unit] = {
     def loop(): Pipe[I,O,Unit] =
       pipe match {
         case Some(pipe) => andThen(pipe, loop());
-        case None       => Finalizer.run; finish;
+        case None       => if (runFinalizer) Finalizer.run; finish;
       }
     delay { loop() }
   }

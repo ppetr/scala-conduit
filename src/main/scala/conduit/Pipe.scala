@@ -52,7 +52,9 @@ private final case class Fuse[-U,-I,X,M,+O,+R](up: GenPipe[U,I,X,M], down: GenPi
 //  extends GenPipe[U,I,O,R];
 
 
-object Pipe {
+object Pipe
+  extends Runner
+{
   private object Log {
     import java.util.logging._
     // TODO
@@ -283,15 +285,35 @@ object Pipe {
     extends Leftover[Nothing,R];
 
 
-
-  def runPipe[R](pipe: GenPipe[Unit,Nothing,Nothing,R]): R = {
+  override def runPipe[O,R](pipe: NoInput[Unit,O,R], sender: O => Unit): R = {
     import Finalizer._
     @tailrec
-    def step[R](pipe: GenPipe[Unit,Nothing,Nothing,R]): R = {
-      stepPipe[Unit,Nothing,Nothing,R](pipe) match {
+    def step[R](pipe: NoInput[Unit,O,R]): R = {
+      stepPipe[Unit,Nothing,O,R](pipe) match {
         case Done(r)                  => r;
-        case HaveOutput(o, _, _)      => o; // Never occurs - o is Nothing so it can be typed to anything.
+        case HaveOutput(o, next, fin) => step(fin.protect({ sender(o); next() }));
         case NeedInput(_, end, fin)   => step(fin.protect({ end(()) }));
+        case Delay(next, fin)         => step(fin.protect({ next() }));
+      }
+    }
+    step(pipe);
+  }
+
+  override def runPipe[I,O,R](pipe: GenPipe[Unit,I,O,R], receiver: () => Option[I], sender: O => Unit): R = {
+    import Finalizer._
+    @tailrec
+    def step[R](pipe: GenPipe[Unit,I,O,R]): R = {
+      stepPipe(pipe) match {
+        case Done(r)                  => r;
+        case HaveOutput(o, next, fin) => step(fin.protect({ sender(o); next() }));
+        case NeedInput(cons, end, fin) =>
+          fin.protect({ receiver() match {
+              case None     => Left(end())
+              case Some(i)  => Right(cons(i))
+            }}) match {
+            case Left(next)   => runPipe(next, sender);
+            case Right(next)  => step(next);
+          }
         case Delay(next, fin)         => step(fin.protect({ next() }));
       }
     }

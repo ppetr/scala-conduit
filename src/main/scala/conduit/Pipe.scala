@@ -51,7 +51,9 @@ private final case class Fuse[-I,X,+O,+R](up: Pipe[I,X,Any], down: Pipe[X,O,R])
 //  extends Pipe[I,O,R];
 
 
-object Pipe {
+object Pipe
+  extends Runner
+{
   private object Log {
     import java.util.logging._
     // TODO
@@ -269,14 +271,35 @@ object Pipe {
     extends Leftover[Nothing,R];
 
 
-  def runPipe[R](pipe: Sink[Nothing,R]): R = {
+  override def runPipe[O,R](pipe: NoInput[O,R], sender: O => Unit): R = {
     import Finalizer._
     @tailrec
-    def step[R](pipe: Sink[Nothing,R]): R = {
-      stepPipe[Nothing,Nothing,R](pipe) match {
+    def step[R](pipe: NoInput[O,R]): R = {
+      stepPipe[Nothing,O,R](pipe) match {
         case Done(r)                  => r;
-        case HaveOutput(o, _, _)      => o; // Never occurs - o is Nothing so it can be typed to anything.
+        case HaveOutput(o, next, fin) => step(fin.protect({ sender(o); next() }));
         case NeedInput(_, end, fin)   => step(fin.protect({ end() }));
+        case Delay(next, fin)         => step(fin.protect({ next() }));
+      }
+    }
+    step(pipe);
+  }
+
+  override def runPipe[I,O,R](pipe: Pipe[I,O,R], receiver: () => Option[I], sender: O => Unit): R = {
+    import Finalizer._
+    @tailrec
+    def step[R](pipe: Pipe[I,O,R]): R = {
+      stepPipe(pipe) match {
+        case Done(r)                  => r;
+        case HaveOutput(o, next, fin) => step(fin.protect({ sender(o); next() }));
+        case NeedInput(cons, end, fin) =>
+          fin.protect({ receiver() match {
+              case None     => Left(end())
+              case Some(i)  => Right(cons(i))
+            }}) match {
+            case Left(next)   => runPipe(next, sender);
+            case Right(next)  => step(next);
+          }
         case Delay(next, fin)         => step(fin.protect({ next() }));
       }
     }

@@ -1,3 +1,5 @@
+// This software is distributed under LGPL.
+
 name := "scala-conduit"
 
 version := "0.1"

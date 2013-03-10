@@ -12,7 +12,7 @@ object Util {
   def filter[A](p: A => Boolean): Pipe[A,A,Nothing] = {
     import Finalizer.empty
     def loop: Pipe[A,A,Nothing] =
-      request[A].asO[A] >>= (x => if (p(x)) (respond(x).as[A,A] >> loop) else loop);
+      request[A] >>= (x => if (p(x)) (respond(x) >> loop) else loop);
     loop;
   }
  

@@ -2,6 +2,8 @@
 
 _Currently the library is experimental and can change in the future._
 
+[![Build Status](https://secure.travis-ci.org/ppetr/scala-conduit.png?branch=master)](https://travis-ci.org/ppetr/scala-conduit)
+
 ## Overview
 
 A `Pipe` is a component that receives objects of a given type and responds with objects of another type. It is similar to [UNIX pipelines](https://en.wikipedia.org/wiki/Unix_pipeline), except that instead of receiving and sending bytes it receives and sends specific objects. When a pipe finishes processing, it also produces a final result.

@@ -7,11 +7,11 @@ trait Runner {
   import Runner._
 
   def runPipe[R](pipe: Pipe.NoInput[Unit,Nothing,R]): R =
-    runPipe[Nothing,R](pipe, NullIO)
+    runPipe[Unit,Nothing,R](pipe, (), NullIO)
 
-  def runPipe[O,R](pipe: Pipe.NoInput[Unit,O,R], sender: O => Unit): R =
-    runPipe[Nothing,O,R](pipe, NullIO, sender)
-  def runPipe[I,O,R](pipe: GenPipe[Unit,I,O,R], receiver: () => Option[I], sender: O => Unit): R;
+  def runPipe[U,O,R](pipe: Pipe.NoInput[U,O,R], init: U, sender: O => Unit): R =
+    runPipe[U,Nothing,O,R](pipe, init, NullIO, sender)
+  def runPipe[U,I,O,R](pipe: GenPipe[U,I,O,R], init: U, receiver: () => Option[I], sender: O => Unit): R;
 }
 
 object Runner {

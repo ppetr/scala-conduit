@@ -268,6 +268,20 @@ object Pipe {
     step(pipe);
   }
 
+  def runPipe[I,O,R](pipe: Pipe[I,O,R], receiver: => I, sender: O => Unit): R = {
+    import Finalizer._
+    @tailrec
+    def step[R](pipe: Pipe[I,O,R]): R = {
+      stepPipe(pipe) match {
+        case Done(r)                  => r;
+        case HaveOutput(o, next, fin) => step(fin.protect({ sender(o); next() }));
+        case NeedInput(consume, fin)  => step(fin.protect({ consume(receiver) }));
+        case Delay(next, fin)         => step(fin.protect({ next() }));
+      }
+    }
+    step(pipe);
+  }
+
 
   private def stepPipe[I,O,R](pipe: Pipe[I,O,R]): PipeCore[I,O,R] =
     pipe match {

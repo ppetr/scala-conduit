@@ -4,7 +4,7 @@ _Currently the library is experimental and can change in the future._
 
 ## Overview
 
-A `Pipe` is a component that receives objects of a given type and responds with objects of another type. It is similar to [UNIX pipelines](http://hackage.haskell.org/package/conduit), except that instead of receiving and sending bytes it receives and sends specific objects. When a pipe finishes processing, it also produces a final result.
+A `Pipe` is a component that receives objects of a given type and responds with objects of another type. It is similar to [UNIX pipelines](https://en.wikipedia.org/wiki/Unix_pipeline), except that instead of receiving and sending bytes it receives and sends specific objects. When a pipe finishes processing, it also produces a final result.
 
 There are two main ways how to compose pipes:
 

@@ -364,13 +364,13 @@ object Pipe {
 
 
   trait Monadic[U,I,O,R] extends Any {
-    def flatMap[B](f: R => GenPipe[U,I,O,B])(implicit finalizer: Finalizer): GenPipe[U,I,O,B];
+    def flatMap[U2 <: U,I2 <: I,O2 >: O,B](f: R => GenPipe[U2,I2,O2,B])(implicit finalizer: Finalizer): GenPipe[U2,I2,O2,B];
     @inline
-    final def >>=[B](f: R => GenPipe[U,I,O,B])(implicit finalizer: Finalizer): GenPipe[U,I,O,B] = flatMap(f);
+    final def >>=[U2 <: U,I2 <: I,O2 >: O,B](f: R => GenPipe[U2,I2,O2,B])(implicit finalizer: Finalizer): GenPipe[U2,I2,O2,B] = flatMap(f);
     @inline
     def map[B](f: R => B)(implicit finalizer: Finalizer) = flatMap((r: R) => done(f(r))): GenPipe[U,I,O,B];
-    def >>[B](p: => GenPipe[U,I,O,B])(implicit finalizer: Finalizer): GenPipe[U,I,O,B];
-    def <<(p: GenPipe[U,I,O,Any])(implicit finalizer: Finalizer): GenPipe[U,I,O,R];
+    def >>[U2 <: U,I2 <: I,O2 >: O,B](p: => GenPipe[U2,I2,O2,B])(implicit finalizer: Finalizer): GenPipe[U2,I2,O2,B];
+    def <<[U2 <: U,I2 <: I,O2 >: O](p: GenPipe[U2,I2,O2,Any])(implicit finalizer: Finalizer): GenPipe[U2,I2,O2,R];
 
     def >->[X,S](that: GenPipe[R,O,X,S]): GenPipe[U,I,X,S];
     def <-<[X,M](that: GenPipe[M,X,I,U]): GenPipe[M,X,O,R];
@@ -378,10 +378,10 @@ object Pipe {
 
   protected trait MonadicImpl[U,I,O,R] extends Any with Monadic[U,I,O,R] {
     def pipe: GenPipe[U,I,O,R];
-    @inline def flatMap[B](f: R => GenPipe[U,I,O,B])(implicit finalizer: Finalizer) = Pipe.flatMap(pipe, f)
+    @inline def flatMap[U2 <: U,I2 <: I,O2 >: O,B](f: R => GenPipe[U2,I2,O2,B])(implicit finalizer: Finalizer) = Pipe.flatMap(pipe, f)
     //@inline def map[B](f: R => B)(implicit finalizer: Finalizer) = Pipe.map(pipe, f);
-    @inline def >>[B](p: => GenPipe[U,I,O,B])(implicit finalizer: Finalizer) = Pipe.flatMap(pipe, (_:R) => p);
-    @inline def <<(p: GenPipe[U,I,O,Any])(implicit finalizer: Finalizer) = Pipe.flatMap(p, (_:Any) => pipe);
+    @inline def >>[U2 <: U,I2 <: I,O2 >: O,B](p: => GenPipe[U2,I2,O2,B])(implicit finalizer: Finalizer) = Pipe.flatMap(pipe, (_:R) => p);
+    @inline def <<[U2 <: U,I2 <: I,O2 >: O](p: GenPipe[U2,I2,O2,Any])(implicit finalizer: Finalizer) = Pipe.flatMap(p, (_:Any) => pipe);
 
     @inline def >->[X,S](that: GenPipe[R,O,X,S]) = Pipe.pipe(pipe, that);
     @inline def <-<[X,M](that: GenPipe[M,X,I,U]) = Pipe.pipe(that, pipe);
@@ -389,6 +389,8 @@ object Pipe {
 
   implicit class FlatMap[U,I,O,R](val pipe: GenPipe[U,I,O,R])
     extends AnyVal with MonadicImpl[U,I,O,R];
-  implicit class FlatMapNothing[U,I,O](val pipe: GenPipe[U,I,O,Nothing])
+  implicit class FlatMapResultNothing[U,I,O](val pipe: GenPipe[U,I,O,Nothing])
     extends AnyVal with MonadicImpl[U,I,O,Nothing];
+  implicit class FlatMapOutputNothing[U,I,R](val pipe: GenPipe[U,I,Nothing,R])
+    extends AnyVal with MonadicImpl[U,I,Nothing,R];
 }

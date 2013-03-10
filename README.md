@@ -25,6 +25,47 @@ TODO
 
 ## Examples
 
+See Util.scala, IO.scala and NIO.scala for full code.
+
+### Read a file and output its contents as `String` lines.
+
+First we create a source pipe that takes no input and lists a given file as its output:
+
+```scala
+def readLines(r: BufferedReader): Source[String,Unit] = {
+  implicit val fin = closeFin(r);
+  untilF[Any,Any,String](Option(r.readLine).map(respond[String] _));
+}
+```
+
+Note the implicit finalizer `fin`. Using Scala's `implicit` feature it is applied to all pipe operations so that the reader is closed properly when the pipe is interrupted. Here `closeFin` is simply
+
+```scala
+implicit def closeFin(implicit c: Closeable): Finalizer =
+  Finalizer { System.err.println("Closing " + c); c.close() }
+```
+
+Using `readLines` we can construct a pipe that takes `BufferedReader`s at its input and outputs their contents:
+
+```scala
+val readLines: Pipe[BufferedReader,String,Unit] =
+  unfold[BufferedReader,String](readLines _);
+```
+
+Finally, we compose it with a simple mapping pipe that converts `File`s into `BufferedReader`s:
+
+```scala
+val readLinesFile: Pipe[File,String,Unit] = {
+  import Finalizer.empty
+  mapP((f: File) => new BufferedReader(
+                      new InputStreamReader(
+                        new FileInputStream(f), "UTF-8"))
+    ) >-> readLines
+}
+```
+
+
+
 ### Display the contents of all Scala files in the current directory
 
 ```scala
@@ -63,8 +104,6 @@ val log = writeLines(new OutputStreamWriter(System.out));
     
 
 `log` receives `String`s and prints them to [standard output](https://en.wikipedia.org/wiki/Standard_output#Standard_output_.28stdout.29).
-
-See IO.scala and NIO.scala for full code.
 
 
 # Copyright

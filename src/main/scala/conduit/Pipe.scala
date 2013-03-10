@@ -349,29 +349,30 @@ object Pipe {
 
 
   trait Monadic[I,O,R] extends Any {
-    def flatMap[B](f: R => Pipe[I,O,B])(implicit finalizer: Finalizer): Pipe[I,O,B];
+    def flatMap[I2 <: I,O2 >: O,B](f: R => Pipe[I2,O2,B])(implicit finalizer: Finalizer): Pipe[I2,O2,B];
     @inline
-    final def >>=[B](f: R => Pipe[I,O,B])(implicit finalizer: Finalizer): Pipe[I,O,B] = flatMap(f);
+    final def >>=[I2 <: I,O2 >: O,B](f: R => Pipe[I2,O2,B])(implicit finalizer: Finalizer): Pipe[I2,O2,B] = flatMap(f);
     @inline
     def map[B](f: R => B)(implicit finalizer: Finalizer) = flatMap((r: R) => done(f(r))): Pipe[I,O,B];
-    def >>[B](p: => Pipe[I,O,B])(implicit finalizer: Finalizer): Pipe[I,O,B];
-    def <<(p: Pipe[I,O,Any])(implicit finalizer: Finalizer): Pipe[I,O,R];
+    def >>[I2 <: I,O2 >: O,B](p: => Pipe[I2,O2,B])(implicit finalizer: Finalizer): Pipe[I2,O2,B];
+    def <<[I2 <: I,O2 >: O](p: Pipe[I2,O2,Any])(implicit finalizer: Finalizer): Pipe[I2,O2,R];
 
     def >->[X,B](that: Pipe[O,X,B]): Pipe[I,X,B];
-    def <-<[X](that: Pipe[X,I,_]): Pipe[X,O,R];
+    def <-<[X](that: Pipe[X,I,Any]): Pipe[X,O,R];
   }
 
   protected trait MonadicImpl[I,O,R] extends Any with Monadic[I,O,R] {
     def pipe: Pipe[I,O,R];
-    @inline def flatMap[B](f: R => Pipe[I,O,B])(implicit finalizer: Finalizer) = Pipe.flatMap(pipe, f)
+    @inline def flatMap[I2 <: I,O2 >: O,B](f: R => Pipe[I2,O2,B])(implicit finalizer: Finalizer) = Pipe.flatMap(pipe, f)
     //@inline def map[B](f: R => B)(implicit finalizer: Finalizer) = Pipe.map(pipe, f);
-    @inline def >>[B](p: => Pipe[I,O,B])(implicit finalizer: Finalizer): Pipe[I,O,B] = Pipe.flatMap(pipe, (_:R) => p);
-    @inline def <<(p: Pipe[I,O,Any])(implicit finalizer: Finalizer): Pipe[I,O,R] = Pipe.flatMap(p, (_:Any) => pipe);
+    @inline def >>[I2 <: I,O2 >: O,B](p: => Pipe[I2,O2,B])(implicit finalizer: Finalizer): Pipe[I2,O2,B] = Pipe.flatMap(pipe, (_:R) => p);
+    @inline def <<[I2 <: I,O2 >: O](p: Pipe[I2,O2,Any])(implicit finalizer: Finalizer): Pipe[I2,O2,R] = Pipe.flatMap(p, (_:Any) => pipe);
 
     @inline def >->[X,B](that: Pipe[O,X,B]) = Pipe.pipe(pipe, that);
-    @inline def <-<[X](that: Pipe[X,I,_]) = Pipe.pipe(that, pipe);
+    @inline def <-<[X](that: Pipe[X,I,Any]) = Pipe.pipe(that, pipe);
   }
 
   implicit class FlatMap[I,O,R](val pipe: Pipe[I,O,R]) extends AnyVal with MonadicImpl[I,O,R];
-  implicit class FlatMapNothing[I,O](val pipe: Pipe[I,O,Nothing]) extends AnyVal with MonadicImpl[I,O,Nothing];
+  implicit class FlatMapResultNothing[I,O](val pipe: Pipe[I,O,Nothing]) extends AnyVal with MonadicImpl[I,O,Nothing];
+  implicit class FlatMapOutputNothing[I,R](val pipe: Pipe[I,Nothing,R]) extends AnyVal with MonadicImpl[I,Nothing,R];
 }

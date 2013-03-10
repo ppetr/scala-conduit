@@ -52,7 +52,9 @@ private final case class Fuse[-I,X,+O,+R,Rr,Rl](up: Pipe[I,X,Rl], down: Pipe[X,O
 //  extends Pipe[I,O,R];
 
 
-object Pipe {
+object Pipe
+  extends Runner
+{
   private object Log {
     import java.util.logging._
     // TODO
@@ -254,7 +256,7 @@ object Pipe {
     extends Leftover[Nothing,R];
 
 
-  def runPipe[R](pipe: Pipe[Unit,Nothing,R]): R = {
+  override def runPipe[R](pipe: Pipe[Unit,Nothing,R]): R = {
     import Finalizer._
     @tailrec
     def step[R](pipe: Pipe[Unit,Nothing,R]): R = {
@@ -268,14 +270,14 @@ object Pipe {
     step(pipe);
   }
 
-  def runPipe[I,O,R](pipe: Pipe[I,O,R], receiver: => I, sender: O => Unit): R = {
+  override def runPipe[I,O,R](pipe: Pipe[I,O,R], receiver: () => I, sender: O => Unit): R = {
     import Finalizer._
     @tailrec
     def step[R](pipe: Pipe[I,O,R]): R = {
       stepPipe(pipe) match {
         case Done(r)                  => r;
         case HaveOutput(o, next, fin) => step(fin.protect({ sender(o); next() }));
-        case NeedInput(consume, fin)  => step(fin.protect({ consume(receiver) }));
+        case NeedInput(consume, fin)  => step(fin.protect({ consume(receiver()) }));
         case Delay(next, fin)         => step(fin.protect({ next() }));
       }
     }

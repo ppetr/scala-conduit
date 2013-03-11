@@ -27,7 +27,8 @@ object Util {
 
   def filter[A,R](p: A => Boolean): GenPipe[R,A,A,R] = {
     import Finalizer.empty
-    unfold[R,A,A](x => if (p(x)) respond(x) else done)
+    //unfold[R,A,A](x => if (p(x)) respond(x) else done)
+    unfoldI[R,A,A,R](x => if (p(x)) respond(x) else done, identity _)
   }
  
 

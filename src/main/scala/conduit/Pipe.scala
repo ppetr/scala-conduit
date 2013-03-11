@@ -99,6 +99,8 @@ object Pipe
       log(Level.WARNING, msg, ex);
     def error(msg: => String, ex: Throwable = null) =
       log(Level.SEVERE, msg, ex);
+    def info(msg: => String, ex: Throwable = null) =
+      log(Level.INFO, msg, ex);
   }
 
   /**
@@ -115,7 +117,7 @@ object Pipe
    * Therefore `Finalizer`s must not make any assumptions about what exception
    * it will receive.
    */
-  class Finalizer private (private val actions: Seq[Option[Throwable] => Unit]) {
+  class Finalizer protected (protected[conduit] val actions: Seq[Option[Throwable] => Unit]) {
     def isEmpty = actions.isEmpty;
 
     protected def run(th: Option[Throwable]): Unit =
@@ -142,6 +144,11 @@ object Pipe
      */
     def ++(that: Finalizer): Finalizer =
       new Finalizer(this.actions ++ that.actions);
+    /**
+     * Adds a block of code to this finalizer.
+     */
+    def ++(body: => Unit): Finalizer =
+      this ++ Finalizer(body)
   }
   object Finalizer {
     /**
@@ -170,6 +177,7 @@ object Pipe
     def run(implicit fin: Finalizer): Unit =
       fin.run(None);
   }
+
 
   /*
   type LQueue[+A] = collection.immutable.Queue[A]
@@ -246,8 +254,12 @@ object Pipe
    * with `end` and the result is returned. This is often useful when
    * constructing filter-like pipes that finish when upstream finishes.
    */
-  def requestEnd[U,I,O,R](cont: I => GenPipe[U,I,O,R], end: U => R = const(done))(implicit finalizer: Finalizer): GenPipe[U,I,O,R] =
-    request[U,I,O,R](cont, (u: U) => done(end(u)));
+  def requestF[U,I,O,R](cont: I => GenPipe[U,I,O,R], end: U => R = const(()), runFinalizer: Boolean = true)(implicit finalizer: Finalizer): GenPipe[U,I,O,R] =
+    request[U,I,O,R](cont, (u: U) => {
+      val r = end(u);
+      if (runFinalizer) Finalizer.run;
+      done(r)
+    });
 
   @inline
   def respond[U,I,O,R](o: O, cont: => GenPipe[U,I,O,R])(implicit finalizer: Finalizer): GenPipe[U,I,O,R] =
@@ -289,7 +301,7 @@ object Pipe
   }
   def untilF[U,I,O](pipe: => Option[GenPipe[U,I,O,Any]])(implicit finalizer: Finalizer): GenPipe[U,I,O,Unit] =
     untilF[U,I,O](pipe, true);
-  def untilF[U,I,O](pipe: => Option[GenPipe[U,I,O,Any]], runFinalizer: Boolean = true)(implicit finalizer: Finalizer): GenPipe[U,I,O,Unit] = {
+  def untilF[U,I,O](pipe: => Option[GenPipe[U,I,O,Any]], runFinalizer: Boolean)(implicit finalizer: Finalizer): GenPipe[U,I,O,Unit] = {
     def loop(): GenPipe[U,I,O,Unit] =
       pipe match {
         case Some(pipe) => andThen(pipe, loop());
@@ -333,8 +345,12 @@ object Pipe
    * For each input received run the pipe produced by `f`. Note that
    * these pipes cannot receive input.
    */
-  def unfold[U,I,O](f: I => NoInput[Unit,O,Any])(implicit finalizer: Finalizer): GenPipe[U,I,O,U] =
-    requestEnd[U,I,O,U](i => andThen(blockInput(f(i)), unfold(f)), (u: U) => u);
+  def unfold[U,I,O](f: I => NoInput[Unit,O,Any])(implicit finalizer: Finalizer): GenPipe[U,I,O,U] = {
+    def loop: GenPipe[U,I,O,U] =
+      requestF[U,I,O,U](i => blockInput(f(i)) >> loop, (u: U) => u);
+    loop;
+  }
+    //requestF[U,I,O,U](i => andThen(blockInput(f(i)), unfold(f)), (u: U) => u);
 
   /**
    * For each input received, it runs the pipe produced by `f`. Note that
@@ -342,15 +358,21 @@ object Pipe
    * doesn't request any input, using `unfoldI` is slightly faster than
    * `unfold`.
    */
-  def unfoldI[U,I,O](f: I => GenPipe[U,I,O,Any])(implicit finalizer: Finalizer): GenPipe[U,I,O,U] =
-    requestEnd[U,I,O,U](i => andThen(f(i), unfoldI(f)), (u: U) => u);
+  def unfoldI[U,I,O,R](f: I => GenPipe[U,I,O,Any], end: U => R = const(()))(implicit finalizer: Finalizer): GenPipe[U,I,O,R] = {
+    def loop: GenPipe[U,I,O,R] =
+      requestF[U,I,O,R](i => f(i) >> loop, end);
+    loop
+  }
 
   /**
    * For each input received run the pipe produced by `f`. Note that
    * these pipes cannot receive input.
    */
-  def unfoldU[I,O](f: I => NoInput[Unit,O,Any])(implicit finalizer: Finalizer): Pipe[I,O,Unit] =
-    requestI(i => andThen(blockInput(f(i)), unfoldU(f)));
+  def unfoldU[I,O](f: I => NoInput[Unit,O,Any])(implicit finalizer: Finalizer): Pipe[I,O,Unit] = {
+    def loop: Pipe[I,O,Unit] =
+      requestI(i => blockInput(f(i)) >> loop);
+    loop
+  }
 
   /**
    * For each input received, it runs the pipe produced by `f`. Note that
@@ -358,14 +380,10 @@ object Pipe
    * doesn't request any input, using `unfoldI` is slightly faster than
    * `unfold`.
    */
-  def unfoldIU[I,O](f: I => Pipe[I,O,Any])(implicit finalizer: Finalizer): Pipe[I,O,Unit] =
-    requestI(i => andThen(f(i), unfoldIU(f)));
-
-
-  def repeat[O](produce: => O)(implicit finalizer: Finalizer): Source[O,Nothing] = {
-    def loop(): Source[O,Nothing]
-      = respond(produce, loop());
-    delay { loop() }
+  def unfoldIU[I,O](f: I => Pipe[I,O,Any])(implicit finalizer: Finalizer): Pipe[I,O,Unit] = {
+    def loop: Pipe[I,O,Unit] =
+      requestI(i => f(i) >> loop);
+    loop
   }
 
 
@@ -375,13 +393,29 @@ object Pipe
     Fuse(i, o);
 
 
+  // TODO: Loop
   def idP[A]: Pipe[A,A,Unit] = {
     implicit val fin = Finalizer.empty;
     requestI(x => respond(x, idP));
   }
 
-  def mapP[I,O](f: I => O)(implicit finalizer: Finalizer): Pipe[I,O,Unit] =
-    requestI(x => respond(f(x), mapP(f)));
+  /**
+   * Processes input with a given function and passes it to output.
+   * Runs the finalizer at the end.
+   */
+  // TODO: Loop
+  def mapF[U,I,O](f: I => O, runFinalizer: Boolean = true)(implicit finalizer: Finalizer): GenPipe[U,I,O,U] =
+    requestF(x => respond(f(x), mapF(f)), u => u)
+
+  /**
+   * Processes all input with a given function.
+   * Runs the finalizer at the end.
+   */
+   def sinkF[U,I,R](f: I => Unit, end: U => R = const(()), runFinalizer: Boolean = true)(implicit finalizer: Finalizer): GenPipe[U,I,Nothing,R] = {
+     def loop: GenPipe[U,I,Nothing,R] =
+       requestF(x => { f(x); loop }, end)
+     loop
+   }
 
 
   /*
@@ -468,9 +502,9 @@ object Pipe
             case Done(m)  => Delay(() => stepNoInput[M,O,R](m, endO(m)), finPlus)
             case Delay(next, _)
                           => Delay(() => step(next(), downCore, finUp), finPlus)
-            case HaveOutput(x, next, finDown1)
+            case HaveOutput(x, next, _)
                           => Delay(() => step(next(), consO(x), finUp), finPlus);
-            case NeedInput(consI, endI, finDown1)
+            case NeedInput(consI, endI, _)
                           => NeedInput((i: I) => step(consI(i), downCore, finUp),
                                        (u: U) => step(stepNoInput(u, endI(u)), downCore, finUp),
                                        finPlus)

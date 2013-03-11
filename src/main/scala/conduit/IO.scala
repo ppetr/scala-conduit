@@ -27,9 +27,8 @@ object IO {
 
   lazy val readLinesFile: Pipe[File,String,Unit] = {
     import Finalizer.empty
-    mapP((f: File) => new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8"))) >-> readLines
+    mapF((f: File) => new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8"))) >-> readLines
   }
-    //arrP((f: File) => new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8"))) >-> readLines;
 
   lazy val readLines: Pipe[BufferedReader,String,Unit] =
     unfoldIU[BufferedReader,String](readLines _);
@@ -47,21 +46,31 @@ object IO {
 
 
   def writeLines(w: Writer): Sink[String,Unit] = {
-    implicit val fin = closeFin(w);
-    def loop(): Sink[String,Unit] =
-      requestI((x: String) => { w.write(x); w.write('\n'); w.flush(); loop() },
-               done { System.err.println("Input finished."); Finalizer.run(fin) })
-    loop();
+    implicit val fin = closeFin(w) ++
+      { System.err.println("Input finished."); };
+    sinkF((x: String) => { w.write(x); w.write('\n'); w.flush(); })
   }
+
 
  
 
   // -----------------------------------------------------------------
+
+  def time[R](body: => R): R = {
+    val start = System.currentTimeMillis;
+    try {
+      body;
+    } finally {
+      val end = System.currentTimeMillis;
+      System.err.println("Took " + (end - start));
+    }
+  }
+
   def main(argv: Array[String]) {
     import Finalizer.empty
     try {
       if (true)
-      {
+      time {
         val child = Runtime.getRuntime().exec(Array(
             "/bin/sh", "-c", "find /home/p/projects/sosirecr/ -name '*java' -type f | xargs cat" ));
         val is = child.getInputStream();
@@ -77,7 +86,7 @@ object IO {
         System.err.println("Exit status: " + child.exitValue());
         //System.exit(0);
       } else
-      {
+      time {
         val i = List("abc", "efg4", "123").toSource;
         val f = filter[String,Unit](s => s.length <= 3);
         val o = writeLines(new OutputStreamWriter(System.out));

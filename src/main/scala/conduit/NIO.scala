@@ -46,17 +46,11 @@ object NIO {
     unfoldIU[File,ByteBuffer](f => readFile(f, buf));
   }
 
-  def writeToOutputStream(os: OutputStream): Pipe[Array[Byte],Nothing,Unit] = {
-    def loop(): Pipe[Array[Byte],Nothing,Unit] =
-      requestI((buf: Array[Byte]) => { os.write(buf); loop() })(closeFin(os));
-    loop();
-  }
+  def writeToOutputStream(os: OutputStream): Pipe[Array[Byte],Nothing,Unit] =
+    sinkF(os.write(_:Array[Byte]))(closeFin(os))
 
-  def writeChannel(c: WritableByteChannel): Sink[ByteBuffer,Unit] = {
-    def loop(): Sink[ByteBuffer,Unit] =
-      requestI((buf: ByteBuffer) => { c.write(buf); loop(); })(closeFin(c));
-    loop();
-  }
+  def writeChannel(c: WritableByteChannel): Sink[ByteBuffer,Unit] =
+    sinkF(c.write(_:ByteBuffer))(closeFin(c));
 
   def writeFile(file: File): Sink[ByteBuffer,Any] =
     delay {
@@ -71,11 +65,9 @@ object NIO {
    */
   def leftovers[B <: Buffer]: Pipe[B,B,Unit] = {
     import Finalizer.empty;
-    def loop(): Pipe[B,B,Unit] =
-      requestI((b: B) => untilF[Any,B,B] {
+    unfoldI((b: B) => untilF[Any,B,B] {
           if (b.hasRemaining()) Some(respond(b)) else None
-        } >> loop());
-    loop();
+        });
   }
 
   def list(dir: File): Source[File,Unit] =

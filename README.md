@@ -59,7 +59,7 @@ Finally, we compose it with a simple mapping pipe that converts `File`s into `Bu
 ```scala
 val readLinesFile: Pipe[File,String,Unit] = {
   import Finalizer.empty
-  mapP((f: File) => new BufferedReader(
+  mapF((f: File) => new BufferedReader(
                       new InputStreamReader(
                         new FileInputStream(f), "UTF-8"))
     ) >-> readLines

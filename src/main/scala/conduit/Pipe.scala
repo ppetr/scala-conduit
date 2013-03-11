@@ -452,6 +452,8 @@ object Pipe
    * In particular `flatMap` and all operations derived from it, and pipe composition.
    */
   trait Monadic[U,I,O,R] extends Any {
+    def pipe: GenPipe[U,I,O,R];
+
     /**
      * When this pipe finishes, pass the result to `f` to continue the computation.
      */
@@ -460,21 +462,25 @@ object Pipe
      * A synonym for [[flatMap]].
      */
     @inline
-    final def >>=[U2 <: U,I2 <: I,O2 >: O,B](f: R => GenPipe[U2,I2,O2,B])(implicit finalizer: Finalizer): GenPipe[U2,I2,O2,B] = flatMap(f);
+    final def >>=[U2 <: U,I2 <: I,O2 >: O,B](f: R => GenPipe[U2,I2,O2,B])(implicit finalizer: Finalizer): GenPipe[U2,I2,O2,B] =
+      flatMap(f);
     /**
      * Map the final value of this pipe.
      */
-    @inline
-    def map[B](f: R => B)(implicit finalizer: Finalizer) = flatMap((r: R) => done(f(r))): GenPipe[U,I,O,B];
+    def map[B](f: R => B)(implicit finalizer: Finalizer): GenPipe[U,I,O,B] =
+      flatMap((r: R) => done(f(r)));
     /**
      * Sequence this pipe with another one. When this pipe finishes, `p`
      * continues (regardless of the result of this).
      */
-    def >>[U2 <: U,I2 <: I,O2 >: O,B](p: => GenPipe[U2,I2,O2,B])(implicit finalizer: Finalizer): GenPipe[U2,I2,O2,B];
+    def >>[U2 <: U,I2 <: I,O2 >: O,B](p: => GenPipe[U2,I2,O2,B])(implicit finalizer: Finalizer): GenPipe[U2,I2,O2,B] =
+      flatMap(const(p));
+
     /**
      * Prepends `p` to this pipe. A reverse of `>>`.
      */
-    def <<[U2 <: U,I2 <: I,O2 >: O](p: GenPipe[U2,I2,O2,Any])(implicit finalizer: Finalizer): GenPipe[U2,I2,O2,R];
+    def <<[U2 <: U,I2 <: I,O2 >: O](p: GenPipe[U2,I2,O2,Any])(implicit finalizer: Finalizer): GenPipe[U2,I2,O2,R] =
+      p >> pipe;
 
     /**
      * Feeds the output and the result of this pipe into `that`.
@@ -484,18 +490,14 @@ object Pipe
      * Feeds the output and the result of `that` into this pipe.
      * The reverse of `>->`.
      */
-    def <-<[X,M](that: GenPipe[M,X,I,U]): GenPipe[M,X,O,R];
+    def <-<[X,M](that: GenPipe[M,X,I,U]): GenPipe[M,X,O,R] =
+      that >-> pipe;
   }
 
   protected trait MonadicImpl[U,I,O,R] extends Any with Monadic[U,I,O,R] {
-    def pipe: GenPipe[U,I,O,R];
     @inline def flatMap[U2 <: U,I2 <: I,O2 >: O,B](f: R => GenPipe[U2,I2,O2,B])(implicit finalizer: Finalizer) = Pipe.flatMap(pipe, f)
-    //@inline def map[B](f: R => B)(implicit finalizer: Finalizer) = Pipe.map(pipe, f);
-    @inline def >>[U2 <: U,I2 <: I,O2 >: O,B](p: => GenPipe[U2,I2,O2,B])(implicit finalizer: Finalizer) = Pipe.flatMap(pipe, (_:R) => p);
-    @inline def <<[U2 <: U,I2 <: I,O2 >: O](p: GenPipe[U2,I2,O2,Any])(implicit finalizer: Finalizer) = Pipe.flatMap(p, (_:Any) => pipe);
 
     @inline def >->[X,S](that: GenPipe[R,O,X,S]) = Pipe.pipe(pipe, that);
-    @inline def <-<[X,M](that: GenPipe[M,X,I,U]) = Pipe.pipe(that, pipe);
   }
 
   /**

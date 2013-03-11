@@ -48,10 +48,9 @@ object IO {
 
   def writeLines(w: Writer): Sink[String,Unit] = {
     implicit val fin = closeFin(w);
-    def read(x: String) =
-      { w.write(x); w.write('\n'); w.flush(); loop() }
     def loop(): Sink[String,Unit] =
-      requestE(read _, { System.err.println("Input finished."); Finalizer.run(fin) })
+      requestI((x: String) => { w.write(x); w.write('\n'); w.flush(); loop() },
+               done { System.err.println("Input finished."); Finalizer.run(fin) })
     loop();
   }
 

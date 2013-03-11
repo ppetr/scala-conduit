@@ -200,32 +200,54 @@ object Pipe
     Done(result);
   }
 
+  /**
+   * Delays a creation of a pipe. For example it can be used to defer
+   * opening a file until the pipe is actually requested.
+   */
   @inline
   def delay[U,I,O,R](inner: => GenPipe[U,I,O,R])(implicit finalizer: Finalizer = Finalizer.empty): GenPipe[U,I,O,R] =
     Delay(() => inner, finalizer);
+  /**
+   * Creates a simple pipe that processes the given action and returns the
+   * its. To be composed with `flatMap` or `>>`.
+   */
   @inline
-  def delayU(body: => Unit)(implicit finalizer: Finalizer = Finalizer.empty): Source[Nothing,Unit] =
-    Delay(() => { body ; done }, finalizer);
+  def delayVal[R](body: => R)(implicit finalizer: Finalizer = Finalizer.empty): Source[Nothing,R] =
+    Delay(() => { done(body) }, finalizer);
 
+  /**
+   * Request input from upstream. Returns either the next input value or the
+   * final upstream result if it has already finished.
+   */
   @inline
   def request[U,I]: GenPipe[U,I,Nothing,Either[U,I]] =
-    requestEither((i: Either[U,I]) => Done(i))(Finalizer.empty);
+    //request((i: Either[U,I]) => Done(i))(Finalizer.empty);
+    request((i: I) => done(Right(i)), (u: U) => done(Left(u)));
+  /**
+   * Request input from upstream. Proceed either `cont` if an input value is
+   * available, otherwise proceed with `end` (which receives the final upstream
+   * result).
+   */
   @inline
   def request[U,I,O,R](cont: I => GenPipe[U,I,O,R], end: U => NoInput[U,O,R])(implicit finalizer: Finalizer): GenPipe[U,I,O,R] =
     NeedInput(cont, end, finalizer);
-  def requestOpt[I,O,R](cont: Option[I] => Pipe[I,O,R])(implicit finalizer: Finalizer): Pipe[I,O,R] =
-    NeedInput((i: I) => cont(Some(i)), (_) => cont(None), finalizer);
-  def requestEither[U,I,O,R](cont: Either[U,I] => GenPipe[U,I,O,R])(implicit finalizer: Finalizer): GenPipe[U,I,O,R] =
-    NeedInput((i: I) => cont(Right(i)), (u: U) => cont(Left(u)), finalizer);
 
-  def requestI[U,I,O](cont: I => GenPipe[U,I,O,U])(implicit finalizer: Finalizer = Finalizer.empty): GenPipe[U,I,O,U] =
-    requestE[U,I,O,U]((i: I) => cont(i), identity[U] _);
-  def requestU[U,I,O](cont: I => GenPipe[U,I,O,Unit])(implicit finalizer: Finalizer = Finalizer.empty): GenPipe[U,I,O,Unit] =
-    requestE[U,I,O,Unit]((i: I) => cont(i), (_) => ());
-  def requestE[U,I,O,R](cont: I => GenPipe[U,I,O,R], end: U => R)(implicit finalizer: Finalizer): GenPipe[U,I,O,R] =
+  /**
+   * Request input from upstream. Parameter `cont` is passed the next input value
+   * (if it is available). If no input is available, the processing continues
+   * with `end`. The final upstream result is ignored.
+   */
+ def requestI[I,O,R](cont: I => Pipe[I,O,R], end: => NoInput[Any,O,R] = done)(implicit finalizer: Finalizer): Pipe[I,O,R] =
+    request[Any,I,O,R]((i: I) => cont(i), (_:Any) => end);
+
+  /**
+   * Request input from upstream. If there is input available, it is passed to
+   * `cont`. If no input is availabe, the upstream final result is processed
+   * with `end` and the result is returned. This is often useful when
+   * constructing filter-like pipes that finish when upstream finishes.
+   */
+  def requestEnd[U,I,O,R](cont: I => GenPipe[U,I,O,R], end: U => R = const(done))(implicit finalizer: Finalizer): GenPipe[U,I,O,R] =
     request[U,I,O,R](cont, (u: U) => done(end(u)));
-  def requestE[I,O,R](cont: I => Pipe[I,O,R], end: => R)(implicit finalizer: Finalizer): Pipe[I,O,R] =
-    request[Any,I,O,R](cont, (_: Any) => done(end));
 
   @inline
   def respond[U,I,O,R](o: O, cont: => GenPipe[U,I,O,R])(implicit finalizer: Finalizer): GenPipe[U,I,O,R] =
@@ -304,7 +326,7 @@ object Pipe
   def discardOutput[I,R](p: Pipe[I,Any,Unit]): Sink[I,Unit] =
     pipe(p, discardOutput);
   val discardOutput: Pipe[Any,Nothing,Unit] =
-    requestU[Any,Any,Nothing]((_) => discardOutput);
+    requestI(const(discardOutput));
 
 
   /**
@@ -312,7 +334,7 @@ object Pipe
    * these pipes cannot receive input.
    */
   def unfold[U,I,O](f: I => NoInput[Unit,O,Any])(implicit finalizer: Finalizer): GenPipe[U,I,O,U] =
-    requestE[U,I,O,U](i => andThen(blockInput(f(i)), unfold(f)), (u: U) => u);
+    requestEnd[U,I,O,U](i => andThen(blockInput(f(i)), unfold(f)), (u: U) => u);
 
   /**
    * For each input received, it runs the pipe produced by `f`. Note that
@@ -321,14 +343,14 @@ object Pipe
    * `unfold`.
    */
   def unfoldI[U,I,O](f: I => GenPipe[U,I,O,Any])(implicit finalizer: Finalizer): GenPipe[U,I,O,U] =
-    requestE[U,I,O,U](i => andThen(f(i), unfoldI(f)), (u: U) => u);
+    requestEnd[U,I,O,U](i => andThen(f(i), unfoldI(f)), (u: U) => u);
 
   /**
    * For each input received run the pipe produced by `f`. Note that
    * these pipes cannot receive input.
    */
   def unfoldU[I,O](f: I => NoInput[Unit,O,Any])(implicit finalizer: Finalizer): Pipe[I,O,Unit] =
-    requestU[Any,I,O](i => andThen(blockInput(f(i)), unfoldU(f)));
+    requestI(i => andThen(blockInput(f(i)), unfoldU(f)));
 
   /**
    * For each input received, it runs the pipe produced by `f`. Note that
@@ -337,7 +359,7 @@ object Pipe
    * `unfold`.
    */
   def unfoldIU[I,O](f: I => Pipe[I,O,Any])(implicit finalizer: Finalizer): Pipe[I,O,Unit] =
-    requestU[Any,I,O](i => andThen(f(i), unfoldIU(f)));
+    requestI(i => andThen(f(i), unfoldIU(f)));
 
 
   def repeat[O](produce: => O)(implicit finalizer: Finalizer): Source[O,Nothing] = {
@@ -355,11 +377,11 @@ object Pipe
 
   def idP[A]: Pipe[A,A,Unit] = {
     implicit val fin = Finalizer.empty;
-    requestU(x => respond(x, idP));
+    requestI(x => respond(x, idP));
   }
 
   def mapP[I,O](f: I => O)(implicit finalizer: Finalizer): Pipe[I,O,Unit] =
-    requestU(x => respond(f(x), mapP(f)));
+    requestI(x => respond(f(x), mapP(f)));
 
 
   /*

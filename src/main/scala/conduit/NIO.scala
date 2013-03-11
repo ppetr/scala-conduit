@@ -48,13 +48,13 @@ object NIO {
 
   def writeToOutputStream(os: OutputStream): Pipe[Array[Byte],Nothing,Unit] = {
     def loop(): Pipe[Array[Byte],Nothing,Unit] =
-      requestU((buf: Array[Byte]) => { os.write(buf); loop() })(closeFin(os));
+      requestI((buf: Array[Byte]) => { os.write(buf); loop() })(closeFin(os));
     loop();
   }
 
   def writeChannel(c: WritableByteChannel): Sink[ByteBuffer,Unit] = {
     def loop(): Sink[ByteBuffer,Unit] =
-      requestU((buf: ByteBuffer) => { c.write(buf); loop(); })(closeFin(c));
+      requestI((buf: ByteBuffer) => { c.write(buf); loop(); })(closeFin(c));
     loop();
   }
 
@@ -72,7 +72,9 @@ object NIO {
   def leftovers[B <: Buffer]: Pipe[B,B,Unit] = {
     import Finalizer.empty;
     def loop(): Pipe[B,B,Unit] =
-      requestU[Any,B,B](b => untilF[Any,B,B] { if (b.hasRemaining()) Some(respond(b)) else None } >> loop());
+      requestI((b: B) => untilF[Any,B,B] {
+          if (b.hasRemaining()) Some(respond(b)) else None
+        } >> loop());
     loop();
   }
 

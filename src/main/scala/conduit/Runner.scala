@@ -6,10 +6,10 @@ package conduit
 trait Runner {
   import Runner._
 
-  def runPipe[R](pipe: Pipe.NoInput[Unit,Nothing,R]): R =
+  def runPipe[R](pipe: NoInput[Unit,Nothing,R]): R =
     runPipe[Unit,Nothing,R](pipe, (), NullIO)
 
-  def runPipe[U,O,R](pipe: Pipe.NoInput[U,O,R], init: U, sender: O => Unit): R =
+  def runPipe[U,O,R](pipe: NoInput[U,O,R], init: U, sender: O => Unit): R =
     runPipe[U,Nothing,O,R](pipe, init, NullIO, sender)
   def runPipe[U,I,O,R](pipe: GenPipe[U,I,O,R], init: U, receiver: () => Option[I], sender: O => Unit): R;
 }

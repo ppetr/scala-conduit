@@ -21,8 +21,13 @@ import collection.mutable.{ArrayBuffer, Buffer, ArrayStack, Stack, Queue}
 import util.control.Exception
 
 /**
- * Accepts input elements of type <code>I</code>, produces output elements of
- * type <code>O</code> and when finished, returns <code>R</code>.
+ * Accepts input elements of type `I` and when its upstream has no
+ * more output, receives its result `U`; produces output elements of
+ * type `O` and when finished, returns `R`.
+ *
+ * In most cases, using [[conduit.Pipe]] is sufficient over this more general trait.
+ *
+ * All operations on `GenPipe`s are defined in the [[Pipe$ Pipe object]].
  */
 sealed trait GenPipe[-U,-I,+O,+R]
 {
@@ -47,7 +52,7 @@ private sealed trait PipeCore[-U,-I,+O,+R] extends GenPipe[U,I,O,R] {
 
 private final case class HaveOutput[-U,-I,+O,+R](output: O, next: () => GenPipe[U,I,O,R], override val finalizer: Pipe.Finalizer)
   extends PipeCore[U,I,O,R];
-private final case class NeedInput[-U,-I,+O,+R](consume: I => GenPipe[U,I,O,R], noInput: U => Pipe.NoInput[U,O,R], override val finalizer: Pipe.Finalizer)
+private final case class NeedInput[-U,-I,+O,+R](consume: I => GenPipe[U,I,O,R], noInput: U => NoInput[U,O,R], override val finalizer: Pipe.Finalizer)
   extends PipeCore[U,I,O,R];
 private final case class Done[+R](result: R)
   extends PipeCore[Any,Any,Nothing,R] {
@@ -68,6 +73,16 @@ private final case class Fuse[-U,-I,X,M,+O,+R](up: GenPipe[U,I,X,M], down: GenPi
 //  extends GenPipe[U,I,O,R];
 
 
+/**
+ * Defines operations for constructing pipes as well as the standard methods
+ * for running them.
+ *
+ * The core operations are: [[[Pipe.request request]]],
+ * [[Pipe.respond respond]],
+ * [[Pipe.done done]], [[Pipe.flatMap flatMap]], [[Pipe.pipe pipe]]
+ * and [[Pipe.delay delay]]. All others are derived
+ * from them.
+ */
 object Pipe
   extends Runner
 {
@@ -86,6 +101,20 @@ object Pipe
       log(Level.SEVERE, msg, ex);
   }
 
+  /**
+   * Represents a set of actions to run when an operation fails for some
+   * reason. The actions usually release any resources held during the
+   * processing of a pipeline.
+   *
+   * If the operation fails because of an exception, `Finalizer` receives it as
+   * an argument. This allows it to act accordingly, for example to distinguish
+   * between recoverable exceptions (such as
+   * `NullPointerException) and unrecoverable ones (such as
+   * `OutOfMemoryError`). Note that such an exception can
+   * occur anywhere in a pipeline, not just in the pipe guarded by a finalizer.
+   * Therefore `Finalizer`s must not make any assumptions about what exception
+   * it will receive.
+   */
   class Finalizer private (private val actions: Seq[Option[Throwable] => Unit]) {
     def isEmpty = actions.isEmpty;
 
@@ -93,7 +122,7 @@ object Pipe
       actions.foreach(Finalizer.runQuietly(_, th));
 
     /**
-     * If an exception occurs when running <var>body</var>, run the finalizer.
+     * If an exception occurs while running <var>body</var>, run this finalizer.
      */
     def protect[R](body: => R): R =
       if (isEmpty) body
@@ -108,13 +137,25 @@ object Pipe
           }
         }
 
+    /**
+     * Join two finalizers into one.
+     */
     def ++(that: Finalizer): Finalizer =
       new Finalizer(this.actions ++ that.actions);
   }
   object Finalizer {
+    /**
+     * The empty finalizer that doesn't run any action.
+     */
     implicit val empty: Finalizer = new Finalizer(Seq.empty);
 
+    /**
+     * Create a finalizer from a block of code.
+     */
     def apply(fin: => Unit): Finalizer = new Finalizer(Seq((_) => fin));
+    /**
+     * Create a finalizer from a function that can examine what exception occurred.
+     */
     def apply(fin: Option[Throwable] => Unit): Finalizer = new Finalizer(Seq(fin));
 
     protected def runQuietly(f: Option[Throwable] => Unit, th: Option[Throwable] = None) =
@@ -123,17 +164,17 @@ object Pipe
         case (ex: Exception) => Log.warn("Exception in a finalizer", ex);
         case (ex: Throwable) => Log.error("Error in a finalizer", ex);
       }
+    /**
+     * Run the action of a finalizer. The finalizer will not receive any exception.
+     */
     def run(implicit fin: Finalizer): Unit =
       fin.run(None);
   }
 
+  /*
   type LQueue[+A] = collection.immutable.Queue[A]
   val emptyLQueue: LQueue[Nothing] = collection.immutable.Queue.empty
-
-  type Pipe[-I,+O,+R]     = GenPipe[Any,I,O,R]
-  type Sink[-I,+R]        = Pipe[I,Nothing,R]
-  type Source[+O,+R]      = Pipe[Any,O,R]
-  type NoInput[-U,+O,+R]  = GenPipe[U,Nothing,O,R]
+  */
 
   @inline
   protected val nextDone: () => Source[Nothing,Unit] = () => done;
@@ -162,6 +203,9 @@ object Pipe
   @inline
   def delay[U,I,O,R](inner: => GenPipe[U,I,O,R])(implicit finalizer: Finalizer = Finalizer.empty): GenPipe[U,I,O,R] =
     Delay(() => inner, finalizer);
+  @inline
+  def delayU(body: => Unit)(implicit finalizer: Finalizer = Finalizer.empty): Source[Nothing,Unit] =
+    Delay(() => { body ; done }, finalizer);
 
   @inline
   def request[I]: Sink[I,Option[I]] =
@@ -294,11 +338,13 @@ object Pipe
     requestU(x => respond(f(x), mapP(f)));
 
 
+  /*
   sealed trait Leftover[+I,+R] { val result: R; }
   final case class HasLeft[+I,+R](left: I, override val result: R)
     extends Leftover[I,R];
   final case class NoLeft[+R](override val result: R)
     extends Leftover[Nothing,R];
+  */
 
 
   override def runPipe[U,O,R](pipe: NoInput[U,O,R], init: U, sender: O => Unit): R = {
@@ -401,16 +447,43 @@ object Pipe
     */
 
 
+  /**
+   * Declares a set of operations that can be performed on a pipe.
+   * In particular `flatMap` and all operations derived from it, and pipe composition.
+   */
   trait Monadic[U,I,O,R] extends Any {
+    /**
+     * When this pipe finishes, pass the result to `f` to continue the computation.
+     */
     def flatMap[U2 <: U,I2 <: I,O2 >: O,B](f: R => GenPipe[U2,I2,O2,B])(implicit finalizer: Finalizer): GenPipe[U2,I2,O2,B];
+    /**
+     * A synonym for [[flatMap]].
+     */
     @inline
     final def >>=[U2 <: U,I2 <: I,O2 >: O,B](f: R => GenPipe[U2,I2,O2,B])(implicit finalizer: Finalizer): GenPipe[U2,I2,O2,B] = flatMap(f);
+    /**
+     * Map the final value of this pipe.
+     */
     @inline
     def map[B](f: R => B)(implicit finalizer: Finalizer) = flatMap((r: R) => done(f(r))): GenPipe[U,I,O,B];
+    /**
+     * Sequence this pipe with another one. When this pipe finishes, `p`
+     * continues (regardless of the result of this).
+     */
     def >>[U2 <: U,I2 <: I,O2 >: O,B](p: => GenPipe[U2,I2,O2,B])(implicit finalizer: Finalizer): GenPipe[U2,I2,O2,B];
+    /**
+     * Prepends `p` to this pipe. A reverse of `>>`.
+     */
     def <<[U2 <: U,I2 <: I,O2 >: O](p: GenPipe[U2,I2,O2,Any])(implicit finalizer: Finalizer): GenPipe[U2,I2,O2,R];
 
+    /**
+     * Feeds the output and the result of this pipe into `that`.
+     */
     def >->[X,S](that: GenPipe[R,O,X,S]): GenPipe[U,I,X,S];
+    /**
+     * Feeds the output and the result of `that` into this pipe.
+     * The reverse of `>->`.
+     */
     def <-<[X,M](that: GenPipe[M,X,I,U]): GenPipe[M,X,O,R];
   }
 
@@ -425,10 +498,21 @@ object Pipe
     @inline def <-<[X,M](that: GenPipe[M,X,I,U]) = Pipe.pipe(that, pipe);
   }
 
+  /**
+   * An implicit class that adds [[Pipe.Monadic monadic operations]] to [[Pipe]].
+   */
   implicit class FlatMap[U,I,O,R](val pipe: GenPipe[U,I,O,R])
     extends AnyVal with MonadicImpl[U,I,O,R];
+  /**
+   * An implicit class that adds [[Pipe.Monadic monadic operations]] to pipes
+   * with no results (that is to infinite pipes that never return).
+   */
   implicit class FlatMapResultNothing[U,I,O](val pipe: GenPipe[U,I,O,Nothing])
     extends AnyVal with MonadicImpl[U,I,O,Nothing];
+  /**
+   * An implicit class that adds [[Pipe.Monadic monadic operations]] to pipes
+   * with no output (sinks).
+   */
   implicit class FlatMapOutputNothing[U,I,R](val pipe: GenPipe[U,I,Nothing,R])
     extends AnyVal with MonadicImpl[U,I,Nothing,R];
 }

@@ -361,7 +361,7 @@ object Pipe
     step(pipe);
   }
 
-  override def runPipe[U,I,O,R](pipe: GenPipe[U,I,O,R], init: U, receiver: () => Option[I], sender: O => Unit): R = {
+  override def runPipeE[U,I,O,R](pipe: GenPipe[U,I,O,R], receiver: () => Either[U,I], sender: O => Unit): R = {
     import Finalizer._
     @tailrec
     def step[R](pipe: GenPipe[U,I,O,R]): R = {
@@ -370,11 +370,11 @@ object Pipe
         case HaveOutput(o, next, fin) => step(fin.protect({ sender(o); next() }));
         case NeedInput(cons, end, fin) =>
           fin.protect({ receiver() match {
-              case None     => Left(end(init))
-              case Some(i)  => Right(cons(i))
+              case Left(u)   => Left((u, end(u)))
+              case Right(i)  => Right(cons(i))
             }}) match {
-            case Left(next)   => runPipe(next, init, sender);
-            case Right(next)  => step(next);
+            case Left((u, next))  => runPipe(next, u, sender);
+            case Right(next)      => step(next);
           }
         case Delay(next, fin)         => step(fin.protect({ next() }));
       }

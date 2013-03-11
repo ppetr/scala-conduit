@@ -208,8 +208,8 @@ object Pipe
     Delay(() => { body ; done }, finalizer);
 
   @inline
-  def request[I]: Sink[I,Option[I]] =
-    requestOpt((i: Option[I]) => Done(i))(Finalizer.empty);
+  def request[U,I]: GenPipe[U,I,Nothing,Either[U,I]] =
+    requestEither((i: Either[U,I]) => Done(i))(Finalizer.empty);
   @inline
   def request[U,I,O,R](cont: I => GenPipe[U,I,O,R], end: U => NoInput[U,O,R])(implicit finalizer: Finalizer): GenPipe[U,I,O,R] =
     NeedInput(cont, end, finalizer);
@@ -305,16 +305,40 @@ object Pipe
     pipe(p, discardOutput);
   val discardOutput: Pipe[Any,Nothing,Unit] =
     requestU[Any,Any,Nothing]((_) => discardOutput);
- 
+
 
   /**
-   * The pipes returned by <code>f</code> should not request any input. If they do,
-   * they're terminated.
+   * For each input received run the pipe produced by `f`. Note that
+   * these pipes cannot receive input.
    */
-  @inline
-  def unfold[I,O](f: I => NoInput[Unit,O,Any])(implicit finalizer: Finalizer): Pipe[I,O,Unit] =
-    requestU[Any,I,O](i => andThen(blockInput(f(i)), unfold(f)));
-  // TODO: unfold for generic U
+  def unfold[U,I,O](f: I => NoInput[Unit,O,Any])(implicit finalizer: Finalizer): GenPipe[U,I,O,U] =
+    requestE[U,I,O,U](i => andThen(blockInput(f(i)), unfold(f)), (u: U) => u);
+
+  /**
+   * For each input received, it runs the pipe produced by `f`. Note that
+   * these pipes ''can'' receive input themselves. If you know that your pipe
+   * doesn't request any input, using `unfoldI` is slightly faster than
+   * `unfold`.
+   */
+  def unfoldI[U,I,O](f: I => GenPipe[U,I,O,Any])(implicit finalizer: Finalizer): GenPipe[U,I,O,U] =
+    requestE[U,I,O,U](i => andThen(f(i), unfoldI(f)), (u: U) => u);
+
+  /**
+   * For each input received run the pipe produced by `f`. Note that
+   * these pipes cannot receive input.
+   */
+  def unfoldU[I,O](f: I => NoInput[Unit,O,Any])(implicit finalizer: Finalizer): Pipe[I,O,Unit] =
+    requestU[Any,I,O](i => andThen(blockInput(f(i)), unfoldU(f)));
+
+  /**
+   * For each input received, it runs the pipe produced by `f`. Note that
+   * these pipes ''can'' receive input themselves. If you know that your pipe
+   * doesn't request any input, using `unfoldI` is slightly faster than
+   * `unfold`.
+   */
+  def unfoldIU[I,O](f: I => Pipe[I,O,Any])(implicit finalizer: Finalizer): Pipe[I,O,Unit] =
+    requestU[Any,I,O](i => andThen(f(i), unfoldIU(f)));
+
 
   def repeat[O](produce: => O)(implicit finalizer: Finalizer): Source[O,Nothing] = {
     def loop(): Source[O,Nothing]

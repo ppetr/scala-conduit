@@ -32,7 +32,7 @@ object IO {
     //arrP((f: File) => new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8"))) >-> readLines;
 
   lazy val readLines: Pipe[BufferedReader,String,Unit] =
-    unfold[BufferedReader,String](readLines _);
+    unfoldIU[BufferedReader,String](readLines _);
 
   def readLines(r: BufferedReader): Source[String,Unit] = {
     implicit val fin = closeFin(r);

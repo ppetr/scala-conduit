@@ -43,7 +43,7 @@ object NIO {
 
   def readFiles(buf: ByteBuffer): Pipe[File,ByteBuffer,Unit] = {
     import Finalizer.empty
-    unfold[File,ByteBuffer](f => readFile(f, buf));
+    unfoldIU[File,ByteBuffer](f => readFile(f, buf));
   }
 
   def writeToOutputStream(os: OutputStream): Pipe[Array[Byte],Nothing,Unit] = {
@@ -89,7 +89,7 @@ object NIO {
     val files = all.toIterator.filter(_.isFile());
     val dirs  = all.toIterator.filter(_.isDirectory());
     fromIterator(files) >>
-      (fromIterator(dirs) >-> unfold(listRec _));
+      (fromIterator(dirs) >-> unfoldIU(listRec _));
   }
 
 

@@ -27,9 +27,7 @@ object Util {
 
   def filter[A,R](p: A => Boolean): GenPipe[R,A,A,R] = {
     import Finalizer.empty
-    def loop: GenPipe[R,A,A,R] =
-      requestI[R,A,A](x => if (p(x)) (respond(x) >> loop) else loop);
-    loop;
+    unfold[R,A,A](x => if (p(x)) respond(x) else done)
   }
  
 
@@ -42,9 +40,9 @@ object Util {
   }
 
   def fromIterable[A]: Pipe[Iterable[A],A,Unit] =
-    unfold[Iterable[A],A](i => fromIterable(i));
+    unfoldU[Iterable[A],A](i => fromIterable(i));
   def fromIterator[A]: Pipe[Iterator[A],A,Unit] =
-    unfold[Iterator[A],A](i => fromIterator(i));
+    unfoldU[Iterator[A],A](i => fromIterator(i));
 
   //def toCol[A,O,C <: Growable[A]](c: C): Pipe[A,O,C] =
 

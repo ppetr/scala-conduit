@@ -1,6 +1,6 @@
 # scala-conduit
 
-_Currently the library is experimental and can change in the future._
+_Currently the library is experimental and the interface is subject to change._
 
 [![Build Status](https://secure.travis-ci.org/ppetr/scala-conduit.png?branch=master)](https://travis-ci.org/ppetr/scala-conduit)
 
@@ -20,6 +20,10 @@ This library aims at deterministic and correct handling of resources. Each pipe 
 The library is conceptually similar to Haskell's [conduit](http://hackage.haskell.org/package/conduit) library.
 
 Requires Scala 2.10.
+
+## Scaladoc
+
+Generated documentation is available [here](http://ppetr.github.com/scala-conduit/#conduit.package). It is updated only from time to time so it might not reflect the latest changes.
 
 ## Core concepts
 

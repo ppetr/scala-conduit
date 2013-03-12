@@ -406,8 +406,18 @@ object Pipe
    */
   def mapF[U,I,O](f: I => O, runFinalizer: Boolean = true)(implicit finalizer: Finalizer): GenPipe[U,I,O,U] = {
     def loop: GenPipe[U,I,O,U] =
-      requestF(x => respond(f(x), loop), u => u)
+      requestF(x => respond(f(x), loop), u => u, runFinalizer)
     loop
+  }
+
+  /**
+   * Folds the input using a given function. Produces no output.
+   * Runs the finalizer at the end.
+   */
+  def fold[I,R](f: (R, I) => R, start: R, runFinalizer: Boolean = true)(implicit finalizer: Finalizer): Sink[I,R] = {
+    def loop(r: R): Sink[I,R] =
+      requestF(x => loop(f(r, x)), (_) => r, runFinalizer)
+    loop(start)
   }
 
   /**
@@ -416,7 +426,7 @@ object Pipe
    */
    def sinkF[U,I,R](f: I => Unit, end: U => R = const(()), runFinalizer: Boolean = true)(implicit finalizer: Finalizer): GenPipe[U,I,Nothing,R] = {
      def loop: GenPipe[U,I,Nothing,R] =
-       requestF(x => { f(x); loop }, end)
+       requestF(x => { f(x); loop }, end, runFinalizer)
      loop
    }
 

@@ -59,4 +59,16 @@ object Util {
   implicit class IterableToSource[A](val iterable: Iterable[A]) extends AnyVal with SourceLike[A] {
     override def toSource = fromIterable(iterable);
   }
+
+
+  def main(argv: Array[String]) {
+    import Finalizer.empty
+
+    println(
+      runPipe(
+        fromIterable(1 until 10000000) >->
+        fold[Int,Int](_ + _, 0)
+      )
+    );
+  }
 }

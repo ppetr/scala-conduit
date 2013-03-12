@@ -1,0 +1,311 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+        <head>
+          <title>conduit - conduit</title>
+          <meta name="description" content="conduit - conduit" />
+          <meta name="keywords" content="conduit conduit" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../lib/template.js"></script>
+      <script type="text/javascript" src="../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../index.html';
+            var hash = 'conduit.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../lib/package_big.png" />
+        
+        <h1>conduit</h1>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">conduit</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>The core trait of this library is <a href="GenPipe.html" class="extype" name="conduit.GenPipe">conduit.GenPipe</a> which represents a
+single piece of computation. It's implementation is hidden, all operations
+on its instances are performed using methods in <a href="Pipe$.html" class="extype" name="conduit.Pipe">conduit.Pipe</a> object.
+</p></div><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="conduit"><span>conduit</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show all</span></li>
+            </ol>
+            <a href="http://docs.scala-lang.org/overviews/scaladoc/usage.html#members" target="_blank">Learn more about member selection</a>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="conduit.Finalizer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FinalizerextendsObject"></a>
+      <a id="Finalizer:Finalizer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Finalizer.html"><span class="name">Finalizer</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Represents a set of actions to run when an operation fails for some
+reason.</p>
+    </li><li name="conduit.GenPipe" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="GenPipe[-U,-I,+O,+R]extendsObject"></a>
+      <a id="GenPipe[-U,-I,+O,+R]:GenPipe[U,I,O,R]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">sealed </span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="GenPipe.html"><span class="name">GenPipe</span></a><span class="tparams">[<span name="U">-U</span>, <span name="I">-I</span>, <span name="O">+O</span>, <span name="R">+R</span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Accepts input elements of type <code>I</code> and when its upstream has no
+more output, receives its result <code>U</code>; produces output elements of
+type <code>O</code> and when finished, returns <code>R</code>.</p>
+    </li><li name="conduit.NoInput" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="NoInput[-U,+O,+R]=conduit.GenPipe[U,Nothing,O,R]"></a>
+      <a id="NoInput[-U,+O,+R]:NoInput[U,O,R]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">NoInput</span><span class="tparams">[<span name="U">-U</span>, <span name="O">+O</span>, <span name="R">+R</span>]</span><span class="result"> = <a href="GenPipe.html" class="extype" name="conduit.GenPipe">GenPipe</a>[<span class="extype" name="conduit.NoInput.U">U</span>, <span class="extype" name="scala.Nothing">Nothing</span>, <span class="extype" name="conduit.NoInput.O">O</span>, <span class="extype" name="conduit.NoInput.R">R</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">A pipe that <i>cannot</i> receive any input.</p><div class="fullcomment"><div class="comment cmt"><p>A pipe that <i>cannot</i> receive any input. The difference over
+<a href="#Source[+O,+R]=conduit.package.Pipe[Any,O,R]" class="extmbr" name="conduit.Source">conduit.Source</a> is that <code>Source</code> can serve as downstream for anything,
+while <code>NoInput</code> can serve as downstream only for a pipe with no output
+(<a href="#Sink[-I,+R]=conduit.package.Pipe[I,Nothing,R]" class="extmbr" name="conduit.Sink">conduit.Sink</a>). <code>NoInput</code> cares about the final result of its
+upstream.
+</p></div></div>
+    </li><li name="conduit.Pipe" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Pipe[-I,+O,+R]=conduit.GenPipe[Any,I,O,R]"></a>
+      <a id="Pipe[-I,+O,+R]:Pipe[I,O,R]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Pipe</span><span class="tparams">[<span name="I">-I</span>, <span name="O">+O</span>, <span name="R">+R</span>]</span><span class="result"> = <a href="GenPipe.html" class="extype" name="conduit.GenPipe">GenPipe</a>[<span class="extype" name="scala.Any">Any</span>, <span class="extype" name="conduit.Pipe.I">I</span>, <span class="extype" name="conduit.Pipe.O">O</span>, <span class="extype" name="conduit.Pipe.R">R</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">A simplified pipe that doesn't care about the result of its upstream.</p><div class="fullcomment"><div class="comment cmt"><p>A simplified pipe that doesn't care about the result of its upstream.</p><p>It is usually suffucient for most purposes.
+</p></div></div>
+    </li><li name="conduit.Runner" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="RunnerextendsObject"></a>
+      <a id="Runner:Runner"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Runner.html"><span class="name">Runner</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Provides an abstraction for running a pipe and producing the final result.</p>
+    </li><li name="conduit.Sink" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Sink[-I,+R]=conduit.package.Pipe[I,Nothing,R]"></a>
+      <a id="Sink[-I,+R]:Sink[I,R]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Sink</span><span class="tparams">[<span name="I">-I</span>, <span name="R">+R</span>]</span><span class="result"> = <a href="GenPipe.html" class="extype" name="conduit.GenPipe">GenPipe</a>[<span class="extype" name="scala.Any">Any</span>, <span class="extype" name="conduit.Sink.I">I</span>, <span class="extype" name="scala.Nothing">Nothing</span>, <span class="extype" name="conduit.Sink.R">R</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">A pipe that cannot produce any output, only a final result.</p>
+    </li><li name="conduit.Source" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Source[+O,+R]=conduit.package.Pipe[Any,O,R]"></a>
+      <a id="Source[+O,+R]:Source[O,R]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Source</span><span class="tparams">[<span name="O">+O</span>, <span name="R">+R</span>]</span><span class="result"> = <a href="GenPipe.html" class="extype" name="conduit.GenPipe">GenPipe</a>[<span class="extype" name="scala.Any">Any</span>, <span class="extype" name="scala.Any">Any</span>, <span class="extype" name="conduit.Source.O">O</span>, <span class="extype" name="conduit.Source.R">R</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">A pipe that cares neither about what input it receives nor the result of
+its upstream.</p>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="conduit.Finalizer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Finalizer"></a>
+      <a id="Finalizer:Finalizer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Finalizer$.html"><span class="name">Finalizer</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="conduit.IO" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="IO"></a>
+      <a id="IO:IO"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="IO$.html"><span class="name">IO</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="conduit.NIO" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="NIO"></a>
+      <a id="NIO:NIO"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="NIO$.html"><span class="name">NIO</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="conduit.Pipe" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Pipe"></a>
+      <a id="Pipe:Pipe"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Pipe$.html"><span class="name">Pipe</span></a><span class="result"> extends <a href="Runner.html" class="extype" name="conduit.Runner">Runner</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Defines operations for constructing pipes as well as the standard methods
+for running them.</p>
+    </li><li name="conduit.Runner" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Runner"></a>
+      <a id="Runner:Runner"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Runner$.html"><span class="name">Runner</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="conduit.Util" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Util"></a>
+      <a id="Util:Util"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Util$.html"><span class="name">Util</span></a>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

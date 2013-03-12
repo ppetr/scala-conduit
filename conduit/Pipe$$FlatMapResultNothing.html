@@ -1,0 +1,362 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+        <head>
+          <title>FlatMapResultNothing - conduit.Pipe.FlatMapResultNothing</title>
+          <meta name="description" content="FlatMapResultNothing - conduit.Pipe.FlatMapResultNothing" />
+          <meta name="keywords" content="FlatMapResultNothing conduit.Pipe.FlatMapResultNothing" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../lib/template.js"></script>
+      <script type="text/javascript" src="../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../index.html';
+            var hash = 'conduit.Pipe$$FlatMapResultNothing';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="type">
+      <div id="definition">
+        <img src="../lib/class_big.png" />
+        <p id="owner"><a href="package.html" class="extype" name="conduit">conduit</a>.<a href="Pipe$.html" class="extype" name="conduit.Pipe">Pipe</a></p>
+        <h1>FlatMapResultNothing</h1>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">implicit final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <span class="name">FlatMapResultNothing</span><span class="tparams">[<span name="U">U</span>, <span name="I">I</span>, <span name="O">O</span>]</span><span class="result"> extends <span class="extype" name="scala.AnyVal">AnyVal</span> with <a href="Pipe$$MonadicImpl.html" class="extype" name="conduit.Pipe.MonadicImpl">MonadicImpl</a>[<span class="extype" name="conduit.Pipe.FlatMapResultNothing.U">U</span>, <span class="extype" name="conduit.Pipe.FlatMapResultNothing.I">I</span>, <span class="extype" name="conduit.Pipe.FlatMapResultNothing.O">O</span>, <span class="extype" name="scala.Nothing">Nothing</span>]</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>An implicit class that adds <a href="Pipe$$Monadic.html" class="extype" name="conduit.Pipe.Monadic">monadic operations</a> to pipes
+with no results (that is to infinite pipes that never return).
+</p></div><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><a href="Pipe$$MonadicImpl.html" class="extype" name="conduit.Pipe.MonadicImpl">MonadicImpl</a>[<span class="extype" name="conduit.Pipe.FlatMapResultNothing.U">U</span>, <span class="extype" name="conduit.Pipe.FlatMapResultNothing.I">I</span>, <span class="extype" name="conduit.Pipe.FlatMapResultNothing.O">O</span>, <span class="extype" name="scala.Nothing">Nothing</span>], <a href="Pipe$$Monadic.html" class="extype" name="conduit.Pipe.Monadic">Monadic</a>[<span class="extype" name="conduit.Pipe.FlatMapResultNothing.U">U</span>, <span class="extype" name="conduit.Pipe.FlatMapResultNothing.I">I</span>, <span class="extype" name="conduit.Pipe.FlatMapResultNothing.O">O</span>, <span class="extype" name="scala.Nothing">Nothing</span>], <span class="extype" name="scala.AnyVal">AnyVal</span>, <span class="extype" name="scala.NotNull">NotNull</span>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="conduit.Pipe.FlatMapResultNothing"><span>FlatMapResultNothing</span></li><li class="in" name="conduit.Pipe.MonadicImpl"><span>MonadicImpl</span></li><li class="in" name="conduit.Pipe.Monadic"><span>Monadic</span></li><li class="in" name="scala.AnyVal"><span>AnyVal</span></li><li class="in" name="scala.NotNull"><span>NotNull</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show all</span></li>
+            </ol>
+            <a href="http://docs.scala-lang.org/overviews/scaladoc/usage.html#members" target="_blank">Learn more about member selection</a>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="conduit.Pipe.FlatMapResultNothing#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(pipe:conduit.GenPipe[U,I,O,Nothing]):conduit.Pipe.FlatMapResultNothing[U,I,O]"></a>
+      <a id="&lt;init&gt;:FlatMapResultNothing[U,I,O]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">FlatMapResultNothing</span><span class="params">(<span name="pipe">pipe: <a href="GenPipe.html" class="extype" name="conduit.GenPipe">GenPipe</a>[<span class="extype" name="conduit.Pipe.FlatMapResultNothing.U">U</span>, <span class="extype" name="conduit.Pipe.FlatMapResultNothing.I">I</span>, <span class="extype" name="conduit.Pipe.FlatMapResultNothing.O">O</span>, <span class="extype" name="scala.Nothing">Nothing</span>]</span>)</span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="scala.Any#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:Any):Boolean"></a>
+      <a id="!=(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.Any###" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="##():Int"></a>
+      <a id="##():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="conduit.Pipe.Monadic#&lt;-&lt;" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="&lt;-&lt;[X,M](that:conduit.GenPipe[M,X,I,U]):conduit.GenPipe[M,X,O,R]"></a>
+      <a id="&lt;-&lt;[X,M](GenPipe[M,X,I,U]):GenPipe[M,X,O,Nothing]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $less$minus$less" class="name">&lt;-&lt;</span><span class="tparams">[<span name="X">X</span>, <span name="M">M</span>]</span><span class="params">(<span name="that">that: <a href="GenPipe.html" class="extype" name="conduit.GenPipe">GenPipe</a>[<span class="extype" name="conduit.Pipe.Monadic.&lt;-&lt;.M">M</span>, <span class="extype" name="conduit.Pipe.Monadic.&lt;-&lt;.X">X</span>, <span class="extype" name="conduit.Pipe.FlatMapResultNothing.I">I</span>, <span class="extype" name="conduit.Pipe.FlatMapResultNothing.U">U</span>]</span>)</span><span class="result">: <a href="GenPipe.html" class="extype" name="conduit.GenPipe">GenPipe</a>[<span class="extype" name="conduit.Pipe.Monadic.&lt;-&lt;.M">M</span>, <span class="extype" name="conduit.Pipe.Monadic.&lt;-&lt;.X">X</span>, <span class="extype" name="conduit.Pipe.FlatMapResultNothing.O">O</span>, <span class="extype" name="scala.Nothing">Nothing</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Feeds the output and the result of <code>that</code> into this pipe.</p><div class="fullcomment"><div class="comment cmt"><p>Feeds the output and the result of <code>that</code> into this pipe.
+The reverse of <code>&gt;-&gt;</code>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Pipe$$Monadic.html" class="extype" name="conduit.Pipe.Monadic">Monadic</a></dd></dl></div>
+    </li><li name="conduit.Pipe.Monadic#&lt;&lt;" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="&lt;&lt;[U2&lt;:U,I2&lt;:I,O2&gt;:O](p:conduit.GenPipe[U2,I2,O2,Any])(implicitfinalizer:conduit.Finalizer):conduit.GenPipe[U2,I2,O2,R]"></a>
+      <a id="&lt;&lt;[U2&lt;:U,I2&lt;:I,O2&gt;:O](GenPipe[U2,I2,O2,Any])(Finalizer):GenPipe[U2,I2,O2,Nothing]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $less$less" class="name">&lt;&lt;</span><span class="tparams">[<span name="U2">U2 &lt;: <span class="extype" name="conduit.Pipe.FlatMapResultNothing.U">U</span></span>, <span name="I2">I2 &lt;: <span class="extype" name="conduit.Pipe.FlatMapResultNothing.I">I</span></span>, <span name="O2">O2 &gt;: <span class="extype" name="conduit.Pipe.FlatMapResultNothing.O">O</span></span>]</span><span class="params">(<span name="p">p: <a href="GenPipe.html" class="extype" name="conduit.GenPipe">GenPipe</a>[<span class="extype" name="conduit.Pipe.Monadic.&lt;&lt;.U2">U2</span>, <span class="extype" name="conduit.Pipe.Monadic.&lt;&lt;.I2">I2</span>, <span class="extype" name="conduit.Pipe.Monadic.&lt;&lt;.O2">O2</span>, <span class="extype" name="scala.Any">Any</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="finalizer">finalizer: <a href="Finalizer.html" class="extype" name="conduit.Finalizer">Finalizer</a></span>)</span><span class="result">: <a href="GenPipe.html" class="extype" name="conduit.GenPipe">GenPipe</a>[<span class="extype" name="conduit.Pipe.Monadic.&lt;&lt;.U2">U2</span>, <span class="extype" name="conduit.Pipe.Monadic.&lt;&lt;.I2">I2</span>, <span class="extype" name="conduit.Pipe.Monadic.&lt;&lt;.O2">O2</span>, <span class="extype" name="scala.Nothing">Nothing</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Prepends <code>p</code> to this pipe.</p><div class="fullcomment"><div class="comment cmt"><p>Prepends <code>p</code> to this pipe. A reverse of <code>&gt;&gt;</code>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Pipe$$Monadic.html" class="extype" name="conduit.Pipe.Monadic">Monadic</a></dd></dl></div>
+    </li><li name="scala.Any#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:Any):Boolean"></a>
+      <a id="==(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="conduit.Pipe.MonadicImpl#&gt;-&gt;" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="&gt;-&gt;[X,S](that:conduit.GenPipe[R,O,X,S]):conduit.GenPipe[U,I,X,S]"></a>
+      <a id="&gt;-&gt;[X,S](GenPipe[Nothing,O,X,S]):GenPipe[U,I,X,S]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $greater$minus$greater" class="name">&gt;-&gt;</span><span class="tparams">[<span name="X">X</span>, <span name="S">S</span>]</span><span class="params">(<span name="that">that: <a href="GenPipe.html" class="extype" name="conduit.GenPipe">GenPipe</a>[<span class="extype" name="scala.Nothing">Nothing</span>, <span class="extype" name="conduit.Pipe.FlatMapResultNothing.O">O</span>, <span class="extype" name="conduit.Pipe.MonadicImpl.&gt;-&gt;.X">X</span>, <span class="extype" name="conduit.Pipe.MonadicImpl.&gt;-&gt;.S">S</span>]</span>)</span><span class="result">: <a href="GenPipe.html" class="extype" name="conduit.GenPipe">GenPipe</a>[<span class="extype" name="conduit.Pipe.FlatMapResultNothing.U">U</span>, <span class="extype" name="conduit.Pipe.FlatMapResultNothing.I">I</span>, <span class="extype" name="conduit.Pipe.MonadicImpl.&gt;-&gt;.X">X</span>, <span class="extype" name="conduit.Pipe.MonadicImpl.&gt;-&gt;.S">S</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Feeds the output and the result of this pipe into <code>that</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Feeds the output and the result of this pipe into <code>that</code>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Pipe$$MonadicImpl.html" class="extype" name="conduit.Pipe.MonadicImpl">MonadicImpl</a> → <a href="Pipe$$Monadic.html" class="extype" name="conduit.Pipe.Monadic">Monadic</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@inline</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="conduit.Pipe.Monadic#&gt;&gt;" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="&gt;&gt;[U2&lt;:U,I2&lt;:I,O2&gt;:O,B](p:=&gt;conduit.GenPipe[U2,I2,O2,B])(implicitfinalizer:conduit.Finalizer):conduit.GenPipe[U2,I2,O2,B]"></a>
+      <a id="&gt;&gt;[U2&lt;:U,I2&lt;:I,O2&gt;:O,B](⇒GenPipe[U2,I2,O2,B])(Finalizer):GenPipe[U2,I2,O2,B]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $greater$greater" class="name">&gt;&gt;</span><span class="tparams">[<span name="U2">U2 &lt;: <span class="extype" name="conduit.Pipe.FlatMapResultNothing.U">U</span></span>, <span name="I2">I2 &lt;: <span class="extype" name="conduit.Pipe.FlatMapResultNothing.I">I</span></span>, <span name="O2">O2 &gt;: <span class="extype" name="conduit.Pipe.FlatMapResultNothing.O">O</span></span>, <span name="B">B</span>]</span><span class="params">(<span name="p">p: ⇒ <a href="GenPipe.html" class="extype" name="conduit.GenPipe">GenPipe</a>[<span class="extype" name="conduit.Pipe.Monadic.&gt;&gt;.U2">U2</span>, <span class="extype" name="conduit.Pipe.Monadic.&gt;&gt;.I2">I2</span>, <span class="extype" name="conduit.Pipe.Monadic.&gt;&gt;.O2">O2</span>, <span class="extype" name="conduit.Pipe.Monadic.&gt;&gt;.B">B</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="finalizer">finalizer: <a href="Finalizer.html" class="extype" name="conduit.Finalizer">Finalizer</a></span>)</span><span class="result">: <a href="GenPipe.html" class="extype" name="conduit.GenPipe">GenPipe</a>[<span class="extype" name="conduit.Pipe.Monadic.&gt;&gt;.U2">U2</span>, <span class="extype" name="conduit.Pipe.Monadic.&gt;&gt;.I2">I2</span>, <span class="extype" name="conduit.Pipe.Monadic.&gt;&gt;.O2">O2</span>, <span class="extype" name="conduit.Pipe.Monadic.&gt;&gt;.B">B</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Sequence this pipe with another one.</p><div class="fullcomment"><div class="comment cmt"><p>Sequence this pipe with another one. When this pipe finishes, <code>p</code>
+continues (regardless of the result of this).
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Pipe$$Monadic.html" class="extype" name="conduit.Pipe.Monadic">Monadic</a></dd></dl></div>
+    </li><li name="conduit.Pipe.Monadic#&gt;&gt;=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="&gt;&gt;=[U2&lt;:U,I2&lt;:I,O2&gt;:O,B](f:R=&gt;conduit.GenPipe[U2,I2,O2,B])(implicitfinalizer:conduit.Finalizer):conduit.GenPipe[U2,I2,O2,B]"></a>
+      <a id="&gt;&gt;=[U2&lt;:U,I2&lt;:I,O2&gt;:O,B]((Nothing)⇒GenPipe[U2,I2,O2,B])(Finalizer):GenPipe[U2,I2,O2,B]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $greater$greater$eq" class="name">&gt;&gt;=</span><span class="tparams">[<span name="U2">U2 &lt;: <span class="extype" name="conduit.Pipe.FlatMapResultNothing.U">U</span></span>, <span name="I2">I2 &lt;: <span class="extype" name="conduit.Pipe.FlatMapResultNothing.I">I</span></span>, <span name="O2">O2 &gt;: <span class="extype" name="conduit.Pipe.FlatMapResultNothing.O">O</span></span>, <span name="B">B</span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="scala.Nothing">Nothing</span>) ⇒ <a href="GenPipe.html" class="extype" name="conduit.GenPipe">GenPipe</a>[<span class="extype" name="conduit.Pipe.Monadic.&gt;&gt;=.U2">U2</span>, <span class="extype" name="conduit.Pipe.Monadic.&gt;&gt;=.I2">I2</span>, <span class="extype" name="conduit.Pipe.Monadic.&gt;&gt;=.O2">O2</span>, <span class="extype" name="conduit.Pipe.Monadic.&gt;&gt;=.B">B</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="finalizer">finalizer: <a href="Finalizer.html" class="extype" name="conduit.Finalizer">Finalizer</a></span>)</span><span class="result">: <a href="GenPipe.html" class="extype" name="conduit.GenPipe">GenPipe</a>[<span class="extype" name="conduit.Pipe.Monadic.&gt;&gt;=.U2">U2</span>, <span class="extype" name="conduit.Pipe.Monadic.&gt;&gt;=.I2">I2</span>, <span class="extype" name="conduit.Pipe.Monadic.&gt;&gt;=.O2">O2</span>, <span class="extype" name="conduit.Pipe.Monadic.&gt;&gt;=.B">B</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">A synonym for <a href="#flatMap[U2&lt;:U,I2&lt;:I,O2&gt;:O,B](f:R=&gt;conduit.GenPipe[U2,I2,O2,B])(implicitfinalizer:conduit.Finalizer):conduit.GenPipe[U2,I2,O2,B]" class="extmbr" name="conduit.Pipe.FlatMapResultNothing#flatMap">flatMap</a>.</p><div class="fullcomment"><div class="comment cmt"><p>A synonym for <a href="#flatMap[U2&lt;:U,I2&lt;:I,O2&gt;:O,B](f:R=&gt;conduit.GenPipe[U2,I2,O2,B])(implicitfinalizer:conduit.Finalizer):conduit.GenPipe[U2,I2,O2,B]" class="extmbr" name="conduit.Pipe.FlatMapResultNothing#flatMap">flatMap</a>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Pipe$$Monadic.html" class="extype" name="conduit.Pipe.Monadic">Monadic</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@inline</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <a id="asInstanceOf[T0]:T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="conduit.Pipe.MonadicImpl#flatMap" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="flatMap[U2&lt;:U,I2&lt;:I,O2&gt;:O,B](f:R=&gt;conduit.GenPipe[U2,I2,O2,B])(implicitfinalizer:conduit.Finalizer):conduit.GenPipe[U2,I2,O2,B]"></a>
+      <a id="flatMap[U2&lt;:U,I2&lt;:I,O2&gt;:O,B]((Nothing)⇒GenPipe[U2,I2,O2,B])(Finalizer):GenPipe[U2,I2,O2,B]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">flatMap</span><span class="tparams">[<span name="U2">U2 &lt;: <span class="extype" name="conduit.Pipe.FlatMapResultNothing.U">U</span></span>, <span name="I2">I2 &lt;: <span class="extype" name="conduit.Pipe.FlatMapResultNothing.I">I</span></span>, <span name="O2">O2 &gt;: <span class="extype" name="conduit.Pipe.FlatMapResultNothing.O">O</span></span>, <span name="B">B</span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="scala.Nothing">Nothing</span>) ⇒ <a href="GenPipe.html" class="extype" name="conduit.GenPipe">GenPipe</a>[<span class="extype" name="conduit.Pipe.MonadicImpl.flatMap.U2">U2</span>, <span class="extype" name="conduit.Pipe.MonadicImpl.flatMap.I2">I2</span>, <span class="extype" name="conduit.Pipe.MonadicImpl.flatMap.O2">O2</span>, <span class="extype" name="conduit.Pipe.MonadicImpl.flatMap.B">B</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="finalizer">finalizer: <a href="Finalizer.html" class="extype" name="conduit.Finalizer">Finalizer</a></span>)</span><span class="result">: <a href="GenPipe.html" class="extype" name="conduit.GenPipe">GenPipe</a>[<span class="extype" name="conduit.Pipe.MonadicImpl.flatMap.U2">U2</span>, <span class="extype" name="conduit.Pipe.MonadicImpl.flatMap.I2">I2</span>, <span class="extype" name="conduit.Pipe.MonadicImpl.flatMap.O2">O2</span>, <span class="extype" name="conduit.Pipe.MonadicImpl.flatMap.B">B</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">When this pipe finishes, pass the result to <code>f</code> to continue the computation.</p><div class="fullcomment"><div class="comment cmt"><p>When this pipe finishes, pass the result to <code>f</code> to continue the computation.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Pipe$$MonadicImpl.html" class="extype" name="conduit.Pipe.MonadicImpl">MonadicImpl</a> → <a href="Pipe$$Monadic.html" class="extype" name="conduit.Pipe.Monadic">Monadic</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@inline</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyVal#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClass():Class[_&lt;:AnyVal]"></a>
+      <a id="getClass():Class[_&lt;:AnyVal]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Predef.Class">Class</span>[_ &lt;: <span class="extype" name="scala.AnyVal">AnyVal</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyVal → Any</dd></dl></div>
+    </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="conduit.Pipe.Monadic#map" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="map[B](f:R=&gt;B)(implicitfinalizer:conduit.Finalizer):conduit.GenPipe[U,I,O,B]"></a>
+      <a id="map[B]((Nothing)⇒B)(Finalizer):GenPipe[U,I,O,B]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">map</span><span class="tparams">[<span name="B">B</span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="scala.Nothing">Nothing</span>) ⇒ <span class="extype" name="conduit.Pipe.Monadic.map.B">B</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="finalizer">finalizer: <a href="Finalizer.html" class="extype" name="conduit.Finalizer">Finalizer</a></span>)</span><span class="result">: <a href="GenPipe.html" class="extype" name="conduit.GenPipe">GenPipe</a>[<span class="extype" name="conduit.Pipe.FlatMapResultNothing.U">U</span>, <span class="extype" name="conduit.Pipe.FlatMapResultNothing.I">I</span>, <span class="extype" name="conduit.Pipe.FlatMapResultNothing.O">O</span>, <span class="extype" name="conduit.Pipe.Monadic.map.B">B</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Map the final value of this pipe.</p><div class="fullcomment"><div class="comment cmt"><p>Map the final value of this pipe.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Pipe$$Monadic.html" class="extype" name="conduit.Pipe.Monadic">Monadic</a></dd></dl></div>
+    </li><li name="conduit.Pipe.FlatMapResultNothing#pipe" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="pipe:conduit.GenPipe[U,I,O,Nothing]"></a>
+      <a id="pipe:GenPipe[U,I,O,Nothing]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">pipe</span><span class="result">: <a href="GenPipe.html" class="extype" name="conduit.GenPipe">GenPipe</a>[<span class="extype" name="conduit.Pipe.FlatMapResultNothing.U">U</span>, <span class="extype" name="conduit.Pipe.FlatMapResultNothing.I">I</span>, <span class="extype" name="conduit.Pipe.FlatMapResultNothing.O">O</span>, <span class="extype" name="scala.Nothing">Nothing</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="conduit.Pipe.FlatMapResultNothing">FlatMapResultNothing</a> → <a href="Pipe$$Monadic.html" class="extype" name="conduit.Pipe.Monadic">Monadic</a></dd></dl></div>
+    </li><li name="scala.Any#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <a id="toString():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="conduit.Pipe.MonadicImpl">
+              <h3>Inherited from <a href="Pipe$$MonadicImpl.html" class="extype" name="conduit.Pipe.MonadicImpl">MonadicImpl</a>[<span class="extype" name="conduit.Pipe.FlatMapResultNothing.U">U</span>, <span class="extype" name="conduit.Pipe.FlatMapResultNothing.I">I</span>, <span class="extype" name="conduit.Pipe.FlatMapResultNothing.O">O</span>, <span class="extype" name="scala.Nothing">Nothing</span>]</h3>
+            </div><div class="parent" name="conduit.Pipe.Monadic">
+              <h3>Inherited from <a href="Pipe$$Monadic.html" class="extype" name="conduit.Pipe.Monadic">Monadic</a>[<span class="extype" name="conduit.Pipe.FlatMapResultNothing.U">U</span>, <span class="extype" name="conduit.Pipe.FlatMapResultNothing.I">I</span>, <span class="extype" name="conduit.Pipe.FlatMapResultNothing.O">O</span>, <span class="extype" name="scala.Nothing">Nothing</span>]</h3>
+            </div><div class="parent" name="scala.AnyVal">
+              <h3>Inherited from <span class="extype" name="scala.AnyVal">AnyVal</span></h3>
+            </div><div class="parent" name="scala.NotNull">
+              <h3>Inherited from <span class="extype" name="scala.NotNull">NotNull</span></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

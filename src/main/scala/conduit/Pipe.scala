@@ -200,10 +200,10 @@ object Pipe
   @inline
   def done[R](result: R): Source[Nothing,R] = Done(result);
   /**
-   * Returns a pipe that runs the given finalizer and then returns the given result.
+   * Runs the given finalizer and then returns `done(result)`.
    */
   @inline
-  def finishF[R](result: R, fin: Finalizer): Source[Nothing,R] = {
+  def doneF[R](result: R, fin: Finalizer): Source[Nothing,R] = {
     Finalizer.run(fin);
     Done(result);
   }
@@ -414,7 +414,7 @@ object Pipe
    * Folds the input using a given function. Produces no output.
    * Runs the finalizer at the end.
    */
-  def fold[I,R](f: (R, I) => R, start: R, runFinalizer: Boolean = true)(implicit finalizer: Finalizer): Sink[I,R] = {
+  def foldF[I,R](f: (R, I) => R, start: R, runFinalizer: Boolean = true)(implicit finalizer: Finalizer): Sink[I,R] = {
     def loop(r: R): Sink[I,R] =
       requestF(x => loop(f(r, x)), (_) => r, runFinalizer)
     loop(start)

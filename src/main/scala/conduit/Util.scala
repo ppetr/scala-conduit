@@ -67,7 +67,7 @@ object Util {
     println(
       runPipe(
         fromIterable(1 until 10000000) >->
-        fold[Int,Int](_ + _, 0)
+        foldF[Int,Int](_ + _, 0)
       )
     );
   }

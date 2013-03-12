@@ -47,25 +47,25 @@ sealed trait GenPipe[-U,-I,+O,+R]
  * delay and producing the final result.
  */
 private sealed trait PipeCore[-U,-I,+O,+R] extends GenPipe[U,I,O,R] {
-  def finalizer: Pipe.Finalizer;
+  def finalizer: Finalizer;
 }
 
-private final case class HaveOutput[-U,-I,+O,+R](output: O, next: () => GenPipe[U,I,O,R], override val finalizer: Pipe.Finalizer)
+private final case class HaveOutput[-U,-I,+O,+R](output: O, next: () => GenPipe[U,I,O,R], override val finalizer: Finalizer)
   extends PipeCore[U,I,O,R];
-private final case class NeedInput[-U,-I,+O,+R](consume: I => GenPipe[U,I,O,R], noInput: U => NoInput[U,O,R], override val finalizer: Pipe.Finalizer)
+private final case class NeedInput[-U,-I,+O,+R](consume: I => GenPipe[U,I,O,R], noInput: U => NoInput[U,O,R], override val finalizer: Finalizer)
   extends PipeCore[U,I,O,R];
 private final case class Done[+R](result: R)
   extends PipeCore[Any,Any,Nothing,R] {
-    override def finalizer = Pipe.Finalizer.empty;
+    override def finalizer = Finalizer.empty;
   }
-private final case class Delay[-U,-I,+O,+R](next: () => GenPipe[U,I,O,R], override val finalizer: Pipe.Finalizer)
+private final case class Delay[-U,-I,+O,+R](next: () => GenPipe[U,I,O,R], override val finalizer: Finalizer)
   extends PipeCore[U,I,O,R];
 
 // We also have two more primitives that represent two core operations on
 // pipes: binding and fusing. They are converted into the above ones when a
 // pipe is run.
 
-private final case class Bind[-U,-I,+O,+R,S](first: GenPipe[U,I,O,S], cont: S => GenPipe[U,I,O,R], finalizer: Pipe.Finalizer)
+private final case class Bind[-U,-I,+O,+R,S](first: GenPipe[U,I,O,S], cont: S => GenPipe[U,I,O,R], finalizer: Finalizer)
   extends GenPipe[U,I,O,R];
 private final case class Fuse[-U,-I,X,M,+O,+R](up: GenPipe[U,I,X,M], down: GenPipe[M,X,O,R])
   extends GenPipe[U,I,O,R];
@@ -86,99 +86,6 @@ private final case class Fuse[-U,-I,X,M,+O,+R](up: GenPipe[U,I,X,M], down: GenPi
 object Pipe
   extends Runner
 {
-  private object Log {
-    import java.util.logging._
-    // TODO
-    val logger = Logger.getLogger(Pipe.getClass().getName());
-
-    private def log(level: Level, msg: => String, ex: Throwable = null) =
-      if (logger.isLoggable(level))
-        logger.log(level, msg, ex);
-
-    def warn(msg: => String, ex: Throwable = null) =
-      log(Level.WARNING, msg, ex);
-    def error(msg: => String, ex: Throwable = null) =
-      log(Level.SEVERE, msg, ex);
-    def info(msg: => String, ex: Throwable = null) =
-      log(Level.INFO, msg, ex);
-  }
-
-  /**
-   * Represents a set of actions to run when an operation fails for some
-   * reason. The actions usually release any resources held during the
-   * processing of a pipeline.
-   *
-   * If the operation fails because of an exception, `Finalizer` receives it as
-   * an argument. This allows it to act accordingly, for example to distinguish
-   * between recoverable exceptions (such as
-   * `NullPointerException) and unrecoverable ones (such as
-   * `OutOfMemoryError`). Note that such an exception can
-   * occur anywhere in a pipeline, not just in the pipe guarded by a finalizer.
-   * Therefore `Finalizer`s must not make any assumptions about what exception
-   * it will receive.
-   */
-  class Finalizer protected (protected[conduit] val actions: Seq[Option[Throwable] => Unit]) {
-    def isEmpty = actions.isEmpty;
-
-    protected def run(th: Option[Throwable]): Unit =
-      actions.foreach(Finalizer.runQuietly(_, th));
-
-    /**
-     * If an exception occurs while running <var>body</var>, run this finalizer.
-     */
-    def protect[R](body: => R): R =
-      if (isEmpty) body
-      else
-        try { body }
-        catch {
-          case (ex: Exception) => { run(Some(ex)); throw ex; }
-          case (ex: Throwable) => {
-            Log.error("Serious Error! Finalizers may fail.", ex);
-            run(Some(ex));
-            throw ex;
-          }
-        }
-
-    /**
-     * Join two finalizers into one.
-     */
-    def ++(that: Finalizer): Finalizer =
-      new Finalizer(this.actions ++ that.actions);
-    /**
-     * Adds a block of code to this finalizer.
-     */
-    def ++(body: => Unit): Finalizer =
-      this ++ Finalizer(body)
-  }
-  object Finalizer {
-    /**
-     * The empty finalizer that doesn't run any action.
-     */
-    implicit val empty: Finalizer = new Finalizer(Seq.empty);
-
-    /**
-     * Create a finalizer from a block of code.
-     */
-    def apply(fin: => Unit): Finalizer = new Finalizer(Seq((_) => fin));
-    /**
-     * Create a finalizer from a function that can examine what exception occurred.
-     */
-    def apply(fin: Option[Throwable] => Unit): Finalizer = new Finalizer(Seq(fin));
-
-    protected def runQuietly(f: Option[Throwable] => Unit, th: Option[Throwable] = None) =
-      try { f(th) }
-      catch {
-        case (ex: Exception) => Log.warn("Exception in a finalizer", ex);
-        case (ex: Throwable) => Log.error("Error in a finalizer", ex);
-      }
-    /**
-     * Run the action of a finalizer. The finalizer will not receive any exception.
-     */
-    def run(implicit fin: Finalizer): Unit =
-      fin.run(None);
-  }
-
-
   /*
   type LQueue[+A] = collection.immutable.Queue[A]
   val emptyLQueue: LQueue[Nothing] = collection.immutable.Queue.empty

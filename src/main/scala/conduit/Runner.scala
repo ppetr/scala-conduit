@@ -6,9 +6,18 @@ package conduit
 trait Runner {
   import Runner._
 
+  /**
+   * Runs a pipe that accepts no input and produces no output. This is the
+   * standard way to run pipes - construct a self-contained pipeline and run it
+   * with this method.
+   */
   def runPipe[R](pipe: NoInput[Unit,Nothing,R]): R =
     runPipe[Unit,Nothing,R](pipe, (), NullIO)
 
+  /**
+   * Runs a pipe that accepts no input, but produces output. The output is fed
+   * to `sender`. Parameter `init` is passed to the pipe as the upstream result.
+   */
   def runPipe[U,O,R](pipe: NoInput[U,O,R], init: U, sender: O => Unit): R =
     runPipeO[U,Nothing,O,R](pipe, init, NullIO, sender)
 

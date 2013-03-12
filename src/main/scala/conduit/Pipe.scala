@@ -393,19 +393,22 @@ object Pipe
     Fuse(i, o);
 
 
-  // TODO: Loop
   def idP[A]: Pipe[A,A,Unit] = {
     implicit val fin = Finalizer.empty;
-    requestI(x => respond(x, idP));
+    def loop: Pipe[A,A,Unit] =
+      requestI(x => respond(x, loop));
+    loop
   }
 
   /**
    * Processes input with a given function and passes it to output.
    * Runs the finalizer at the end.
    */
-  // TODO: Loop
-  def mapF[U,I,O](f: I => O, runFinalizer: Boolean = true)(implicit finalizer: Finalizer): GenPipe[U,I,O,U] =
-    requestF(x => respond(f(x), mapF(f)), u => u)
+  def mapF[U,I,O](f: I => O, runFinalizer: Boolean = true)(implicit finalizer: Finalizer): GenPipe[U,I,O,U] = {
+    def loop: GenPipe[U,I,O,U] =
+      requestF(x => respond(f(x), loop), u => u)
+    loop
+  }
 
   /**
    * Processes all input with a given function.
@@ -473,15 +476,18 @@ object Pipe
       case Bind(next, cont, fin)  => stepBind(next, cont, fin);
     }
 
-  private def stepBind[U,I,O,R,S](pipe: GenPipe[U,I,O,S], cont: S => GenPipe[U,I,O,R], fin: Finalizer): PipeCore[U,I,O,R] =
-    stepPipe(pipe) match {
-      case Done(s)                    => Delay(() => cont(s), fin)
-      case NeedInput(cons, end, finI) => NeedInput(i  => stepBind(cons(i), cont, fin),
-                                                   u  => stepBind(stepNoInput(u, end(u)), cont, fin),
-                                                   finI)
-      case HaveOutput(o, next, finO)  => HaveOutput(o, () => stepBind(next(), cont, fin), finO)
-      case Delay(pipe, finD)          => Delay(() => stepBind(pipe(), cont, fin), finD)
-    }
+  private def stepBind[U,I,O,R,S](startPipe: GenPipe[U,I,O,S], cont: S => GenPipe[U,I,O,R], fin: Finalizer): PipeCore[U,I,O,R] = {
+    def loop(pipe: GenPipe[U,I,O,S]): PipeCore[U,I,O,R] =
+      stepPipe(pipe) match {
+        case Done(s)                    => Delay(() => cont(s), fin)
+        case NeedInput(cons, end, finI) => NeedInput(i  => loop(cons(i)),
+                                                     u  => loop(stepNoInput(u, end(u))),
+                                                     finI)
+        case HaveOutput(o, next, finO)  => HaveOutput(o, () => loop(next()), finO)
+        case Delay(pipe, finD)          => Delay(() => loop(pipe()), finD)
+      }
+    loop(startPipe);
+  }
 
   private def stepFuse[U,I,X,M,O,R](up: GenPipe[U,I,X,M], down: GenPipe[M,X,O,R]): PipeCore[U,I,O,R] = {
     import Finalizer._

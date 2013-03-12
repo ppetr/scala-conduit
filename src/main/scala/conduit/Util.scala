@@ -34,10 +34,17 @@ object Util {
    * Filter input using a given predicate. Pass the upstream result as the
    * downstream result unmodified.
    */
-  def filter[A,R](p: A => Boolean): GenPipe[R,A,A,R] = {
+  @inline
+  def filter[A,R](p: A => Boolean): GenPipe[R,A,A,R] =
+    filter[R,A,R](p, identity _);
+
+  /**
+   * Filter input using a given predicate. Modify the upstream result with the
+   * given function.
+   */
+  def filter[U,A,R](p: A => Boolean, end: U => R): GenPipe[U,A,A,R] = {
     import Finalizer.empty
-    //unfold[R,A,A](x => if (p(x)) respond(x) else done)
-    unfoldI[R,A,A,R](x => if (p(x)) respond(x) else done, identity _)
+    unfoldI[U,A,A,R](x => if (p(x)) respond(x) else done, end)
   }
  
 

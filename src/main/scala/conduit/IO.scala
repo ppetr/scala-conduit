@@ -22,17 +22,29 @@ object IO {
   import Pipe._;
   import Util._;
 
+  /**
+   * Implicit method for creating finalizers that close a `Closeable`.
+   */
   implicit def closeFin(implicit c: Closeable): Finalizer =
     Finalizer { System.err.println("Closing " + c); c.close() }
 
+  /**
+   * For each file on input output its content as lines.
+   */
   lazy val readLinesFile: Pipe[File,String,Unit] = {
     import Finalizer.empty
     mapF((f: File) => new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8"))) >-> readLines
   }
 
+  /**
+   * For each `BufferedReader` on input output its content as lines.
+   */
   lazy val readLines: Pipe[BufferedReader,String,Unit] =
     unfoldIU[BufferedReader,String](readLines _);
 
+  /**
+   * Output the content of a `BufferedReader` as lines.
+   */
   def readLines(r: BufferedReader): Source[String,Unit] = {
     implicit val fin = closeFin(r);
     untilF[Any,Any,String](Option(r.readLine).map(respond[String] _));
@@ -45,6 +57,9 @@ object IO {
   }
 
 
+  /**
+   * Write input strings to a given `Writer`.
+   */
   def writeLines(w: Writer): Sink[String,Unit] = {
     implicit val fin = closeFin(w) ++
       { System.err.println("Input finished."); };
@@ -52,11 +67,35 @@ object IO {
   }
 
 
+
+  /**
+   * List files in a given directory.
+   */
+  def list(dir: File): Source[File,Unit] =
+    Util.fromIterable(
+      dir.listFiles(new FileFilter { def accept(f: File) = f.isFile; })
+    );
+
+  /**
+   * Recursively list files under a given directory. First output immediate
+   * descendants and then their content recursively.
+   */
+  def listRec(dir: File): Source[File,Unit] =
+  {
+    import Util._;
+    import Finalizer.empty
+    val all = dir.listFiles();
+    val files = all.toIterator.filter(_.isFile());
+    val dirs  = all.toIterator.filter(_.isDirectory());
+    fromIterator(files) >>
+      (fromIterator(dirs) >-> unfoldIU(listRec _));
+  }
  
 
   // -----------------------------------------------------------------
 
-  def time[R](body: => R): R = {
+
+  protected def time[R](body: => R): R = {
     val start = System.currentTimeMillis;
     try {
       body;

@@ -70,22 +70,6 @@ object NIO {
         });
   }
 
-  def list(dir: File): Source[File,Unit] =
-    Util.fromIterable(
-      dir.listFiles(new FileFilter { def accept(f: File) = f.isFile; })
-    );
-
-  def listRec(dir: File): Source[File,Unit] =
-  {
-    import Util._;
-    import Finalizer.empty
-    val all = dir.listFiles();
-    val files = all.toIterator.filter(_.isFile());
-    val dirs  = all.toIterator.filter(_.isDirectory());
-    fromIterator(files) >>
-      (fromIterator(dirs) >-> unfoldIU(listRec _));
-  }
-
 
   // -----------------------------------------------------------------
 

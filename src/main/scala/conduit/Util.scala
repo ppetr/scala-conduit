@@ -21,10 +21,19 @@ import scala.collection.generic.Growable
 object Util {
   import Pipe._;
 
+  /**
+   * Implicit class for converting values into pipes that output just that
+   * singleton value.
+   */
   implicit class ImplicitAsPipe[O](val value: O) extends AnyVal {
     def asPipe: Source[O,Unit] = respond[O](value)(Finalizer.empty);
   }
 
+
+  /**
+   * Filter input using a given predicate. Pass the upstream result as the
+   * downstream result unmodified.
+   */
   def filter[A,R](p: A => Boolean): GenPipe[R,A,A,R] = {
     import Finalizer.empty
     //unfold[R,A,A](x => if (p(x)) respond(x) else done)
@@ -32,30 +41,56 @@ object Util {
   }
  
 
+  /**
+   * Create a source pipe from a sequence.
+   */
   def fromSeq[A](values: A*): Source[A,Unit] = fromIterable(values);
+  /**
+   * Create a source pipe from an iterable.
+   */
   def fromIterable[A](i : Iterable[A]): Source[A,Unit]
     = fromIterator(i.iterator);
+  /**
+   * Create a source pipe from an iterator.
+   */
   def fromIterator[A](i : Iterator[A]): Source[A,Unit] = {
     import Finalizer.empty
     untilF(if (i.hasNext) Some(respond[A](i.next())) else None);
   }
 
+  /**
+   * Create a source pipe that reads iterables on input and outputs their
+   * content.
+   */
   def fromIterable[A]: Pipe[Iterable[A],A,Unit] =
     unfoldU[Iterable[A],A](i => fromIterable(i));
+  /**
+   * Create a source pipe that reads iterators on input and outputs their
+   * content.
+   */
   def fromIterator[A]: Pipe[Iterator[A],A,Unit] =
     unfoldU[Iterator[A],A](i => fromIterator(i));
 
   //def toCol[A,O,C <: Growable[A]](c: C): Pipe[A,O,C] =
 
 
+  /**
+   * A trait for structures that can be converted to source pipes.
+   */
   trait SourceLike[+O] extends Any {
     this: AnyVal =>
     def toSource: Source[O,Unit];
   }
+  /**
+   * A trait for structures that can be converted to sink pipes.
+   */
   trait SinkLike[-I] extends Any {
     def toSink: Sink[I,Unit];
   }
 
+  /**
+   * Implicit class that enriches any iterable with `SourceLike.toSource`.
+   */
   implicit class IterableToSource[A](val iterable: Iterable[A]) extends AnyVal with SourceLike[A] {
     override def toSource = fromIterable(iterable);
   }

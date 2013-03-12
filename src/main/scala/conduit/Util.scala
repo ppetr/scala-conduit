@@ -46,6 +46,18 @@ object Util {
     import Finalizer.empty
     unfoldI[U,A,A,R](x => if (p(x)) respond(x) else done, end)
   }
+
+  /**
+   * Resend input to output until the given predicate is satisfied.
+   */
+  def takeWhile[A,R](p: A => Boolean): Pipe[A,A,Unit] = {
+    import Finalizer.empty
+    def loop: Pipe[A,A,Unit] =
+      requestI[A,A,Unit]((x: A) =>
+        if (p(x)) respond(x, loop) else done
+      );
+    loop
+  }
  
 
   /**

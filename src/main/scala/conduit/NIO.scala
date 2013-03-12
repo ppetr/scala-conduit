@@ -43,7 +43,7 @@ object NIO {
 
   def readFiles(buf: ByteBuffer): Pipe[File,ByteBuffer,Unit] = {
     import Finalizer.empty
-    unfoldIU[File,ByteBuffer](f => readFile(f, buf));
+    unfoldI(f => readFile(f, buf));
   }
 
   def writeToOutputStream(os: OutputStream): Pipe[Array[Byte],Nothing,Unit] =

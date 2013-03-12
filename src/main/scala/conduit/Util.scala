@@ -82,13 +82,13 @@ object Util {
    * content.
    */
   def fromIterable[A]: Pipe[Iterable[A],A,Unit] =
-    unfoldU[Iterable[A],A](i => fromIterable(i));
+    unfold(i => fromIterable(i));
   /**
    * Create a source pipe that reads iterators on input and outputs their
    * content.
    */
   def fromIterator[A]: Pipe[Iterator[A],A,Unit] =
-    unfoldU[Iterator[A],A](i => fromIterator(i));
+    unfold(i => fromIterator(i));
 
   //def toCol[A,O,C <: Growable[A]](c: C): Pipe[A,O,C] =
 

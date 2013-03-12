@@ -40,7 +40,7 @@ object IO {
    * For each `BufferedReader` on input output its content as lines.
    */
   lazy val readLines: Pipe[BufferedReader,String,Unit] =
-    unfoldIU[BufferedReader,String](readLines _);
+    unfoldI(readLines _);
 
   /**
    * Output the content of a `BufferedReader` as lines.
@@ -88,7 +88,7 @@ object IO {
     val files = all.toIterator.filter(_.isFile());
     val dirs  = all.toIterator.filter(_.isDirectory());
     fromIterator(files) >>
-      (fromIterator(dirs) >-> unfoldIU(listRec _));
+      (fromIterator(dirs) >-> unfoldI(listRec _));
   }
  
 

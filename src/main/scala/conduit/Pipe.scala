@@ -251,45 +251,22 @@ object Pipe
   /**
    * For each input received run the pipe produced by `f`. Note that
    * these pipes cannot receive input.
+   *
+   * This is a shorthand for [[unfoldI]] with each input produced by `f` wrapped
+   * by [[blockInput]].
    */
-  def unfold[U,I,O](f: I => NoInput[Unit,O,Any])(implicit finalizer: Finalizer): GenPipe[U,I,O,U] = {
-    def loop: GenPipe[U,I,O,U] =
-      requestF[U,I,O,U](i => blockInput(f(i)) >> loop, (u: U) => u);
-    loop;
-  }
-    //requestF[U,I,O,U](i => andThen(blockInput(f(i)), unfold(f)), (u: U) => u);
+  def unfold[U,I,O,R](f: I => NoInput[Unit,O,Any], end: U => R = const(()))(implicit finalizer: Finalizer): GenPipe[U,I,O,R] =
+    unfoldI[U,I,O,R](i => blockInput(f(i)), end)
 
   /**
    * For each input received, it runs the pipe produced by `f`. Note that
-   * these pipes ''can'' receive input themselves. If you know that your pipe
-   * doesn't request any input, using `unfoldI` is slightly faster than
-   * `unfold`.
+   * these pipes ''can'' receive input themselves (although they can opt not
+   * to). If you know that your pipe doesn't request any input, using `unfoldI`
+   * is slightly faster than `unfold`.
    */
   def unfoldI[U,I,O,R](f: I => GenPipe[U,I,O,Any], end: U => R = const(()))(implicit finalizer: Finalizer): GenPipe[U,I,O,R] = {
     def loop: GenPipe[U,I,O,R] =
       requestF[U,I,O,R](i => f(i) >> loop, end);
-    loop
-  }
-
-  /**
-   * For each input received run the pipe produced by `f`. Note that
-   * these pipes cannot receive input.
-   */
-  def unfoldU[I,O](f: I => NoInput[Unit,O,Any])(implicit finalizer: Finalizer): Pipe[I,O,Unit] = {
-    def loop: Pipe[I,O,Unit] =
-      requestI(i => blockInput(f(i)) >> loop);
-    loop
-  }
-
-  /**
-   * For each input received, it runs the pipe produced by `f`. Note that
-   * these pipes ''can'' receive input themselves. If you know that your pipe
-   * doesn't request any input, using `unfoldI` is slightly faster than
-   * `unfold`.
-   */
-  def unfoldIU[I,O](f: I => Pipe[I,O,Any])(implicit finalizer: Finalizer): Pipe[I,O,Unit] = {
-    def loop: Pipe[I,O,Unit] =
-      requestI(i => f(i) >> loop);
     loop
   }
 

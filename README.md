@@ -27,7 +27,9 @@ Generated documentation is available [here](http://ppetr.github.com/scala-condui
 
 ## Core concepts
 
-_Note:_ To understand how type parameters of pipes work, you need to understand Scala's [covariant and contravariant types](https://en.wikipedia.org/wiki/Covariance_and_contravariance_(computer_science)).
+_Note:_ To understand how type parameters of pipes work, you need to understand Scala's [covariant and contravariant types][covariance].
+
+  [covariance]: https://en.wikipedia.org/wiki/Covariance_and_contravariance_(computer_science)
 
 ### Pipe
 

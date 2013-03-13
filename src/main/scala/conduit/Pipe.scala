@@ -82,8 +82,8 @@ private final case class Feedback[-U,I,+O,+R](inner: Feedback[U,I,O,R])
  * [[Pipe.done[R]* done]], [[Pipe.flatMap flatMap]], [[Pipe.pipe pipe]],
  * [[Pipe.delay delay]] and [[Pipe.feedback feedback]]. All others can derived
  * from them. Most methods also have a variant whose last parameter is the next
- * pipe in sequence: Instead of `respond(x) >> ...` you can write (slightly
- * faster) `respond(x, ...)`.
+ * pipe in sequence: Instead of `respond(x) >>: ...` you can write (slightly
+ * faster) `respond(x, ...)` etc.
  */
 object Pipe
   extends Runner

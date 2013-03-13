@@ -87,7 +87,7 @@ object IO {
     val all = dir.listFiles();
     val files = all.toIterator.filter(_.isFile());
     val dirs  = all.toIterator.filter(_.isDirectory());
-    fromIterator(files) >>
+    fromIterator(files) >>:
       (fromIterator(dirs) >-> unfoldI(listRec _));
   }
  

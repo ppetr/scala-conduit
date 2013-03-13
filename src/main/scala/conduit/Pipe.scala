@@ -124,7 +124,7 @@ object Pipe
     Delay(() => inner, finalizer);
   /**
    * Creates a simple pipe that processes the given action and returns the
-   * its. To be composed with `flatMap` or `>>`.
+   * its. To be composed with `flatMap` or `>>:`.
    */
   @inline
   def delayVal[R](body: => R)(implicit finalizer: Finalizer = Finalizer.empty): Source[Nothing,R] =
@@ -286,7 +286,7 @@ object Pipe
    */
   def unfoldI[U,I,O,R](f: I => GenPipe[U,I,O,Any], end: U => R = const(()))(implicit finalizer: Finalizer): GenPipe[U,I,O,R] = {
     def loop: GenPipe[U,I,O,R] =
-      requestF[U,I,O,R](i => f(i) >> loop, end);
+      requestF[U,I,O,R](i => f(i) >>: loop, end);
     loop
   }
 
@@ -509,14 +509,14 @@ object Pipe
      * Sequence this pipe with another one. When this pipe finishes, `p`
      * continues (regardless of the result of this).
      */
-    def >>[U2 <: U,I2 <: I,O2 >: O,B](p: => GenPipe[U2,I2,O2,B])(implicit finalizer: Finalizer): GenPipe[U2,I2,O2,B] =
-      flatMap(const(p));
+    def >>:[U2 <: U,I2 <: I,O2 >: O](p: GenPipe[U2,I2,O2,Any])(implicit finalizer: Finalizer): GenPipe[U2,I2,O2,R] =
+      p.flatMap(const(pipe));
 
     /**
-     * Prepends `p` to this pipe. A reverse of `>>`.
+     * Prepends `p` to this pipe. A reverse of `>>:`.
      */
-    def <<[U2 <: U,I2 <: I,O2 >: O](p: GenPipe[U2,I2,O2,Any])(implicit finalizer: Finalizer): GenPipe[U2,I2,O2,R] =
-      p >> pipe;
+    def :<<[U2 <: U,I2 <: I,O2 >: O](p: GenPipe[U2,I2,O2,Any])(implicit finalizer: Finalizer): GenPipe[U2,I2,O2,R] =
+      p >>: pipe;
 
     /**
      * Feeds the output and the result of this pipe into `that`.

@@ -82,7 +82,8 @@ object NIO {
       writeLines(new OutputStreamWriter(System.out));
 
     val pipe =
-      listRec(new File(".")) >->
+      new File(".").asPipe >->
+        listRec >->
         filter[File,Unit](_.getName().endsWith(".scala")) >->
         readLinesFile >->
         log;

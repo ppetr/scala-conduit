@@ -80,15 +80,23 @@ object IO {
    * Recursively list files under a given directory. First output immediate
    * descendants and then their content recursively.
    */
-  def listRec(dir: File): Source[File,Unit] =
-  {
+  def listRec: Pipe[File,File,Unit] = {
     import Util._;
     import Finalizer.empty
-    val all = dir.listFiles();
-    val files = all.toIterator.filter(_.isFile());
-    val dirs  = all.toIterator.filter(_.isDirectory());
-    fromIterator(files) >>
-      (fromIterator(dirs) >-> unfoldI(listRec _));
+    def f: Pipe[File,Either[File,File],Unit] =
+      mapF((_: File).listFiles.toIterable) >->
+        fromIterable >->
+        unfoldI(f => if (f.isFile()) respond(Right(f))
+                     else if (f.isDirectory()) respond(Left(f))
+                     else done)
+      /*
+      val all = dir.listFiles();
+      val files = all.toIterator.filter(_.isFile());
+      val dirs  = all.toIterator.filter(_.isDirectory());
+      fromIterator(files) >>
+        (fromIterator(dirs) >-> unfoldI(listRec _));
+        */
+    feedback(f)
   }
  
 

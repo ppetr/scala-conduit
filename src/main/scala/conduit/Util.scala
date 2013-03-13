@@ -115,12 +115,32 @@ object Util {
   }
 
 
+
+  val feedbackTest = {
+    implicit val fin = Finalizer.empty;
+    def loop: Pipe[String,Either[String,Char],Unit] =
+      requestI(x => if (x.length >= 1)
+        respond(Right(x.charAt(0)), respond(Left(x.substring(1)), loop))
+      else
+        loop
+      )
+    loop
+  }
+
+
   def main(argv: Array[String]) {
     import Finalizer.empty
 
+    runPipe(
+      Seq("Abcd, ", "kocka prede. ", "Kocour mota, ", "pes pocita.").toSource >->
+      feedback(feedbackTest) >->
+      sinkF(print _)(Finalizer.empty)
+    );
+    println()
+
     println(
       runPipe(
-        fromIterable(1 until 10000000) >->
+        (1 until 10000000).toSource >->
         foldF[Int,Int](_ + _, 0)
       )
     );

@@ -69,8 +69,8 @@ private final case class Bind[-U,-I,+O,+R,S](first: GenPipe[U,I,O,S], cont: S =>
   extends GenPipe[U,I,O,R];
 private final case class Fuse[-U,-I,X,M,+O,+R](up: GenPipe[U,I,X,M], down: GenPipe[M,X,O,R])
   extends GenPipe[U,I,O,R];
-//private final case class Leftover[I,+O,+R](leftover: I, next: () => GenPipe[U,I,O,R])
-//  extends GenPipe[U,I,O,R];
+private final case class Feedback[-U,I,+O,+R](inner: GenPipe[U,I,Either[I,O],R])
+  extends GenPipe[U,I,O,R];
 
 
 /**
@@ -196,6 +196,26 @@ object Pipe
   def andThen[U,I,O,R](first: GenPipe[U,I,O,_], cont: => GenPipe[U,I,O,R])(implicit finalizer: Finalizer): GenPipe[U,I,O,R] =
     flatMap[U,I,O,R,Any](first, const(cont));
 
+  @inline
+  def pipe[U,I,X,M,O,R](i: GenPipe[U,I,X,M], o: GenPipe[M,X,O,R]): GenPipe[U,I,O,R] =
+    Fuse(i, o);
+
+  /**
+   * Allows a pipe to feed back a part of its output back to its input. If the
+   * pipe outputs `Left(i)` then `i` is passed as its next input before any
+   * other input offered by upstream. If the pipe outputs `Right(o)` then `o`
+   * is just sent downstream.
+   *
+   * Important note: If at some point the pipe exhausts all input and receives
+   * the final upstream result, the feedback is broken. Any more output values
+   * of type `Left(i)` are discarded.
+   */
+  @inline
+  def feedback[U,I,O,R](pipe: GenPipe[U,I,Either[I,O],R]): GenPipe[U,I,O,R] =
+    Feedback(pipe);
+
+  // -------------------------------------------------------------------
+
   def untilF[U,I,O,A,B](f: A => Either[GenPipe[U,I,O,A],B], start: A)(implicit finalizer: Finalizer): GenPipe[U,I,O,B] =
     untilF[U,I,O,A,B](f, start, true);
   def untilF[U,I,O,A,B](f: A => Either[GenPipe[U,I,O,A],B], start: A, runFinalizer: Boolean)(implicit finalizer: Finalizer): GenPipe[U,I,O,B] = {
@@ -269,12 +289,6 @@ object Pipe
       requestF[U,I,O,R](i => f(i) >> loop, end);
     loop
   }
-
-
-
-  @inline
-  def pipe[U,I,X,M,O,R](i: GenPipe[U,I,X,M], o: GenPipe[M,X,O,R]): GenPipe[U,I,O,R] =
-    Fuse(i, o);
 
 
   def idP[A]: Pipe[A,A,Unit] = {
@@ -368,6 +382,7 @@ object Pipe
       case p@Delay(_,_)           => p;
       case Fuse(up, down)         => stepFuse(up, down);
       case Bind(next, cont, fin)  => stepBind(next, cont, fin);
+      case Feedback(inner)        => stepFeedback(inner);
     }
 
   private def stepBind[U,I,O,R,S](startPipe: GenPipe[U,I,O,S], cont: S => GenPipe[U,I,O,R], fin: Finalizer): PipeCore[U,I,O,R] = {
@@ -425,6 +440,47 @@ object Pipe
       case Delay(next, fin)         => Delay(() => stepNoInput(upResult, next()), fin);
     }
     */
+
+  private def stepFeedback[U,I,O,R](start: GenPipe[U,I,Either[I,O],R]) = {
+    import collection.immutable.Queue._
+    type Queue[+I] = collection.immutable.Queue[I]
+
+    def f(p: GenPipe[U,I,Either[I,O],R], buf: Queue[I]): PipeCore[U,I,O,R] =
+      stepPipe(p) match {
+        case Done(r)          => Done(r)
+        case Delay(next, fin) => Delay(() => f(next(), buf), fin)
+        case HaveOutput(Left(a), next, fin)
+                              => Delay(() => f(next(), buf.enqueue(a)), fin)
+        case HaveOutput(Right(o), next, fin)
+                              => HaveOutput(o, () => f(next(), buf), fin)
+        case NeedInput(cons, end, fin) if buf.isEmpty
+                              => NeedInput(i => f(cons(i), empty),
+                                           e => ignore(end(e)),
+                                           fin)
+        case NeedInput(cons, _, fin) => {
+          val (i, buf2) = buf.dequeue
+          Delay(() => f(cons(i), buf2), fin)
+        }
+      }
+
+    def ignore(p: GenPipe[U,Nothing,Either[I,O],R]): PipeCore[U,Nothing,O,R] =
+      stepPipe[U,Nothing,Either[I,O],R](p) match {
+        case Done(r)          => Done(r)
+        case Delay(next, fin) => Delay[U,Nothing,O,R](() => ignore(next()), fin)
+        case HaveOutput(Left(a), next, fin)
+                              => Delay[U,Nothing,O,R](() => ignore(next()), fin)
+        case HaveOutput(Right(o), next, fin)
+                              => HaveOutput[U,Nothing,O,R](o, () => ignore(next()), fin)
+        case NeedInput(_, end, fin)
+                              => NeedInput[U,Nothing,O,R](i => i, // never happens
+                                           e => ignore(end(e)),
+                                           fin)
+      }
+
+    f(start, empty);
+  }
+
+
 
 
   /**

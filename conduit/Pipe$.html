@@ -45,11 +45,13 @@
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Defines operations for constructing pipes as well as the standard methods
-for running them.</p><p>The core operations are: <a href="#request[U,I,O,R](cont:I=&gt;conduit.GenPipe[U,I,O,R],end:U=&gt;conduit.NoInput[U,O,R])(implicitfinalizer:conduit.Finalizer):conduit.GenPipe[U,I,O,R]" class="extmbr" name="conduit.Pipe#request">request</a>,
+for running them.</p><p>The core operations are: <a href="#request[U,I]:conduit.GenPipe[U,I,Nothing,Either[U,I]]" class="extmbr" name="conduit.Pipe#request">request</a>,
 <a href="#respond[O](o:O)(implicitfinalizer:conduit.Finalizer):conduit.Source[O,Unit]" class="extmbr" name="conduit.Pipe#respond">respond</a>,
-<a href="#done[R](result:R):conduit.Source[Nothing,R]" class="extmbr" name="conduit.Pipe#done">done</a>, <a href="#flatMap[U,I,O,R,S](pipe:conduit.GenPipe[U,I,O,S],f:S=&gt;conduit.GenPipe[U,I,O,R])(implicitfinalizer:conduit.Finalizer):conduit.GenPipe[U,I,O,R]" class="extmbr" name="conduit.Pipe#flatMap">flatMap</a>, <a href="#pipe[U,I,X,M,O,R](i:conduit.GenPipe[U,I,X,M],o:conduit.GenPipe[M,X,O,R]):conduit.GenPipe[U,I,O,R]" class="extmbr" name="conduit.Pipe#pipe">pipe</a>
-and <a href="#delay[U,I,O,R](inner:=&gt;conduit.GenPipe[U,I,O,R])(implicitfinalizer:conduit.Finalizer):conduit.GenPipe[U,I,O,R]" class="extmbr" name="conduit.Pipe#delay">delay</a>. All others are derived
-from them.
+<a href="#done[R](result:R):conduit.Source[Nothing,R]" class="extmbr" name="conduit.Pipe#done">done</a>, <a href="#flatMap[U,I,O,R,S](pipe:conduit.GenPipe[U,I,O,S],f:S=&gt;conduit.GenPipe[U,I,O,R])(implicitfinalizer:conduit.Finalizer):conduit.GenPipe[U,I,O,R]" class="extmbr" name="conduit.Pipe#flatMap">flatMap</a>, <a href="#pipe[U,I,X,M,O,R](i:conduit.GenPipe[U,I,X,M],o:conduit.GenPipe[M,X,O,R]):conduit.GenPipe[U,I,O,R]" class="extmbr" name="conduit.Pipe#pipe">pipe</a>,
+<a href="#delay[U,I,O,R](inner:=&gt;conduit.GenPipe[U,I,O,R])(implicitfinalizer:conduit.Finalizer):conduit.GenPipe[U,I,O,R]" class="extmbr" name="conduit.Pipe#delay">delay</a> and <a href="#feedback[U,I,O,R](pipe:conduit.Feedback[U,I,O,R]):conduit.GenPipe[U,I,O,R]" class="extmbr" name="conduit.Pipe#feedback">feedback</a>. All others can derived
+from them. Most methods also have a variant whose last parameter is the next
+pipe in sequence: Instead of <code>respond(x) &gt;&gt;: ...</code> you can write (slightly
+faster) <code>respond(x, ...)</code> etc.
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="Runner.html" class="extype" name="conduit.Runner">Runner</a>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
@@ -350,7 +352,7 @@ opening a file until the pipe is actually requested.
       </h4>
       <p class="shortcomment cmt">Creates a simple pipe that processes the given action and returns the
 its.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a simple pipe that processes the given action and returns the
-its. To be composed with <code>flatMap</code> or <code>&gt;&gt;</code>.
+its. To be composed with <code>flatMap</code> or <code>&gt;&gt;:</code>.
 </p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@inline</span><span class="args">()</span>
               
@@ -457,6 +459,28 @@ its. To be composed with <code>flatMap</code> or <code>&gt;&gt;</code>.
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="conduit.Pipe#feedback" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="feedback[U,I,O,R](pipe:conduit.Feedback[U,I,O,R]):conduit.GenPipe[U,I,O,R]"></a>
+      <a id="feedback[U,I,O,R](Feedback[U,I,O,R]):GenPipe[U,I,O,R]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">feedback</span><span class="tparams">[<span name="U">U</span>, <span name="I">I</span>, <span name="O">O</span>, <span name="R">R</span>]</span><span class="params">(<span name="pipe">pipe: <a href="package.html#Feedback[-U,I,+O,+R]=conduit.GenPipe[U,I,Either[I,O],R]" class="extmbr" name="conduit.Feedback">Feedback</a>[<span class="extype" name="conduit.Pipe.feedback.U">U</span>, <span class="extype" name="conduit.Pipe.feedback.I">I</span>, <span class="extype" name="conduit.Pipe.feedback.O">O</span>, <span class="extype" name="conduit.Pipe.feedback.R">R</span>]</span>)</span><span class="result">: <a href="GenPipe.html" class="extype" name="conduit.GenPipe">GenPipe</a>[<span class="extype" name="conduit.Pipe.feedback.U">U</span>, <span class="extype" name="conduit.Pipe.feedback.I">I</span>, <span class="extype" name="conduit.Pipe.feedback.O">O</span>, <span class="extype" name="conduit.Pipe.feedback.R">R</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Allows a pipe to feed back a part of its output back to its input.</p><div class="fullcomment"><div class="comment cmt"><p>Allows a pipe to feed back a part of its output back to its input. If the
+pipe outputs <code>Left(i)</code> then <code>i</code> is passed as its next input before any
+other input offered by upstream. If the pipe outputs <code>Right(o)</code> then <code>o</code>
+is just sent downstream.</p><p>Important note: If at some point the pipe exhausts all input and receives
+the final upstream result, the feedback is broken. Any more output values
+of type <code>Left(i)</code> are discarded.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@inline</span><span class="args">()</span>
+              
+        </dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>
@@ -865,19 +889,20 @@ Runs the finalizer at the end.
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="conduit.Pipe#unfold" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="unfold[U,I,O](f:I=&gt;conduit.NoInput[Unit,O,Any])(implicitfinalizer:conduit.Finalizer):conduit.GenPipe[U,I,O,U]"></a>
-      <a id="unfold[U,I,O]((I)⇒NoInput[Unit,O,Any])(Finalizer):GenPipe[U,I,O,U]"></a>
+      <a id="unfold[U,I,O,R](f:I=&gt;conduit.NoInput[Unit,O,Any],end:U=&gt;R)(implicitfinalizer:conduit.Finalizer):conduit.GenPipe[U,I,O,R]"></a>
+      <a id="unfold[U,I,O,R]((I)⇒NoInput[Unit,O,Any],(U)⇒R)(Finalizer):GenPipe[U,I,O,R]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">unfold</span><span class="tparams">[<span name="U">U</span>, <span name="I">I</span>, <span name="O">O</span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="conduit.Pipe.unfold.I">I</span>) ⇒ <a href="package.html#NoInput[-U,+O,+R]=conduit.GenPipe[U,Nothing,O,R]" class="extmbr" name="conduit.NoInput">NoInput</a>[<span class="extype" name="scala.Unit">Unit</span>, <span class="extype" name="conduit.Pipe.unfold.O">O</span>, <span class="extype" name="scala.Any">Any</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="finalizer">finalizer: <a href="Finalizer.html" class="extype" name="conduit.Finalizer">Finalizer</a></span>)</span><span class="result">: <a href="GenPipe.html" class="extype" name="conduit.GenPipe">GenPipe</a>[<span class="extype" name="conduit.Pipe.unfold.U">U</span>, <span class="extype" name="conduit.Pipe.unfold.I">I</span>, <span class="extype" name="conduit.Pipe.unfold.O">O</span>, <span class="extype" name="conduit.Pipe.unfold.U">U</span>]</span>
+        <span class="name">unfold</span><span class="tparams">[<span name="U">U</span>, <span name="I">I</span>, <span name="O">O</span>, <span name="R">R</span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="conduit.Pipe.unfold.I">I</span>) ⇒ <a href="package.html#NoInput[-U,+O,+R]=conduit.GenPipe[U,Nothing,O,R]" class="extmbr" name="conduit.NoInput">NoInput</a>[<span class="extype" name="scala.Unit">Unit</span>, <span class="extype" name="conduit.Pipe.unfold.O">O</span>, <span class="extype" name="scala.Any">Any</span>]</span>, <span name="end">end: (<span class="extype" name="conduit.Pipe.unfold.U">U</span>) ⇒ <span class="extype" name="conduit.Pipe.unfold.R">R</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="finalizer">finalizer: <a href="Finalizer.html" class="extype" name="conduit.Finalizer">Finalizer</a></span>)</span><span class="result">: <a href="GenPipe.html" class="extype" name="conduit.GenPipe">GenPipe</a>[<span class="extype" name="conduit.Pipe.unfold.U">U</span>, <span class="extype" name="conduit.Pipe.unfold.I">I</span>, <span class="extype" name="conduit.Pipe.unfold.O">O</span>, <span class="extype" name="conduit.Pipe.unfold.R">R</span>]</span>
       </span>
       </h4>
       <p class="shortcomment cmt">For each input received run the pipe produced by <code>f</code>.</p><div class="fullcomment"><div class="comment cmt"><p>For each input received run the pipe produced by <code>f</code>. Note that
-these pipes cannot receive input.
+these pipes cannot receive input.</p><p>This is a shorthand for <a href="#unfoldI[U,I,O,R](f:I=&gt;conduit.GenPipe[U,I,O,Any],end:U=&gt;R)(implicitfinalizer:conduit.Finalizer):conduit.GenPipe[U,I,O,R]" class="extmbr" name="conduit.Pipe#unfoldI">unfoldI</a> with each input produced by <code>f</code> wrapped
+by <a href="#blockInput[O,R](p:conduit.NoInput[Unit,O,R]):conduit.Source[O,R]" class="extmbr" name="conduit.Pipe#blockInput">blockedInput</a>.
 </p></div></div>
     </li><li name="conduit.Pipe#unfoldI" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="unfoldI[U,I,O,R](f:I=&gt;conduit.GenPipe[U,I,O,Any],end:U=&gt;R)(implicitfinalizer:conduit.Finalizer):conduit.GenPipe[U,I,O,R]"></a>
@@ -892,41 +917,9 @@ these pipes cannot receive input.
       </span>
       </h4>
       <p class="shortcomment cmt">For each input received, it runs the pipe produced by <code>f</code>.</p><div class="fullcomment"><div class="comment cmt"><p>For each input received, it runs the pipe produced by <code>f</code>. Note that
-these pipes <i>can</i> receive input themselves. If you know that your pipe
-doesn't request any input, using <code>unfoldI</code> is slightly faster than
-<code>unfold</code>.
-</p></div></div>
-    </li><li name="conduit.Pipe#unfoldIU" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="unfoldIU[I,O](f:I=&gt;conduit.Pipe[I,O,Any])(implicitfinalizer:conduit.Finalizer):conduit.Pipe[I,O,Unit]"></a>
-      <a id="unfoldIU[I,O]((I)⇒Pipe[I,O,Any])(Finalizer):Pipe[I,O,Unit]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">unfoldIU</span><span class="tparams">[<span name="I">I</span>, <span name="O">O</span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="conduit.Pipe.unfoldIU.I">I</span>) ⇒ <a href="package.html#Pipe[-I,+O,+R]=conduit.GenPipe[Any,I,O,R]" class="extmbr" name="conduit.Pipe">Pipe</a>[<span class="extype" name="conduit.Pipe.unfoldIU.I">I</span>, <span class="extype" name="conduit.Pipe.unfoldIU.O">O</span>, <span class="extype" name="scala.Any">Any</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="finalizer">finalizer: <a href="Finalizer.html" class="extype" name="conduit.Finalizer">Finalizer</a></span>)</span><span class="result">: <a href="package.html#Pipe[-I,+O,+R]=conduit.GenPipe[Any,I,O,R]" class="extmbr" name="conduit.Pipe">Pipe</a>[<span class="extype" name="conduit.Pipe.unfoldIU.I">I</span>, <span class="extype" name="conduit.Pipe.unfoldIU.O">O</span>, <span class="extype" name="scala.Unit">Unit</span>]</span>
-      </span>
-      </h4>
-      <p class="shortcomment cmt">For each input received, it runs the pipe produced by <code>f</code>.</p><div class="fullcomment"><div class="comment cmt"><p>For each input received, it runs the pipe produced by <code>f</code>. Note that
-these pipes <i>can</i> receive input themselves. If you know that your pipe
-doesn't request any input, using <code>unfoldI</code> is slightly faster than
-<code>unfold</code>.
-</p></div></div>
-    </li><li name="conduit.Pipe#unfoldU" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="unfoldU[I,O](f:I=&gt;conduit.NoInput[Unit,O,Any])(implicitfinalizer:conduit.Finalizer):conduit.Pipe[I,O,Unit]"></a>
-      <a id="unfoldU[I,O]((I)⇒NoInput[Unit,O,Any])(Finalizer):Pipe[I,O,Unit]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">unfoldU</span><span class="tparams">[<span name="I">I</span>, <span name="O">O</span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="conduit.Pipe.unfoldU.I">I</span>) ⇒ <a href="package.html#NoInput[-U,+O,+R]=conduit.GenPipe[U,Nothing,O,R]" class="extmbr" name="conduit.NoInput">NoInput</a>[<span class="extype" name="scala.Unit">Unit</span>, <span class="extype" name="conduit.Pipe.unfoldU.O">O</span>, <span class="extype" name="scala.Any">Any</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="finalizer">finalizer: <a href="Finalizer.html" class="extype" name="conduit.Finalizer">Finalizer</a></span>)</span><span class="result">: <a href="package.html#Pipe[-I,+O,+R]=conduit.GenPipe[Any,I,O,R]" class="extmbr" name="conduit.Pipe">Pipe</a>[<span class="extype" name="conduit.Pipe.unfoldU.I">I</span>, <span class="extype" name="conduit.Pipe.unfoldU.O">O</span>, <span class="extype" name="scala.Unit">Unit</span>]</span>
-      </span>
-      </h4>
-      <p class="shortcomment cmt">For each input received run the pipe produced by <code>f</code>.</p><div class="fullcomment"><div class="comment cmt"><p>For each input received run the pipe produced by <code>f</code>. Note that
-these pipes cannot receive input.
+these pipes <i>can</i> receive input themselves (although they can opt not
+to). If you know that your pipe doesn't request any input, using <code>unfoldI</code>
+is slightly faster than <code>unfold</code>.
 </p></div></div>
     </li><li name="conduit.Pipe#untilF" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="untilF[U,I,O](pipe:=&gt;Option[conduit.GenPipe[U,I,O,Any]],runFinalizer:Boolean)(implicitfinalizer:conduit.Finalizer):conduit.GenPipe[U,I,O,Unit]"></a>

@@ -266,6 +266,19 @@ singleton value.</p>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="conduit.Util#feedbackTest" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="feedbackTest:conduit.Pipe[String,Either[String,Char],Unit]"></a>
+      <a id="feedbackTest:Pipe[String,Either[String,Char],Unit]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">feedbackTest</span><span class="result">: <a href="package.html#Pipe[-I,+O,+R]=conduit.GenPipe[Any,I,O,R]" class="extmbr" name="conduit.Pipe">Pipe</a>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Either">Either</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Char">Char</span>], <span class="extype" name="scala.Unit">Unit</span>]</span>
+      </span>
+      </h4>
+      
     </li><li name="conduit.Util#filter" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="filter[U,A,R](p:A=&gt;Boolean,end:U=&gt;R):conduit.GenPipe[U,A,A,R]"></a>
       <a id="filter[U,A,R]((A)⇒Boolean,(U)⇒R):GenPipe[U,A,A,R]"></a>
@@ -486,6 +499,19 @@ content.</p>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="conduit.Util#takeWhile" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="takeWhile[A,R](p:A=&gt;Boolean):conduit.Pipe[A,A,Unit]"></a>
+      <a id="takeWhile[A,R]((A)⇒Boolean):Pipe[A,A,Unit]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">takeWhile</span><span class="tparams">[<span name="A">A</span>, <span name="R">R</span>]</span><span class="params">(<span name="p">p: (<span class="extype" name="conduit.Util.takeWhile.A">A</span>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <a href="package.html#Pipe[-I,+O,+R]=conduit.GenPipe[Any,I,O,R]" class="extmbr" name="conduit.Pipe">Pipe</a>[<span class="extype" name="conduit.Util.takeWhile.A">A</span>, <span class="extype" name="conduit.Util.takeWhile.A">A</span>, <span class="extype" name="scala.Unit">Unit</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Resend input to output until the given predicate is satisfied.</p>
     </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>

@@ -308,15 +308,15 @@
       </h4>
       <p class="shortcomment cmt">List files in a given directory.</p>
     </li><li name="conduit.IO#listRec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="listRec(dir:java.io.File):conduit.Source[java.io.File,Unit]"></a>
-      <a id="listRec(File):Source[File,Unit]"></a>
+      <a id="listRec:conduit.Pipe[java.io.File,java.io.File,Unit]"></a>
+      <a id="listRec:Pipe[File,File,Unit]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">listRec</span><span class="params">(<span name="dir">dir: <span class="extype" name="java.io.File">File</span></span>)</span><span class="result">: <a href="package.html#Source[+O,+R]=conduit.package.Pipe[Any,O,R]" class="extmbr" name="conduit.Source">Source</a>[<span class="extype" name="java.io.File">File</span>, <span class="extype" name="scala.Unit">Unit</span>]</span>
+        <span class="name">listRec</span><span class="result">: <a href="package.html#Pipe[-I,+O,+R]=conduit.GenPipe[Any,I,O,R]" class="extmbr" name="conduit.Pipe">Pipe</a>[<span class="extype" name="java.io.File">File</span>, <span class="extype" name="java.io.File">File</span>, <span class="extype" name="scala.Unit">Unit</span>]</span>
       </span>
       </h4>
       <p class="shortcomment cmt">Recursively list files under a given directory.</p><div class="fullcomment"><div class="comment cmt"><p>Recursively list files under a given directory. First output immediate

@@ -89,7 +89,23 @@ on its instances are performed using methods in <a href="Pipe$.html" class="exty
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol><li name="conduit.Finalizer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+              <ol><li name="conduit.Feedback" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Feedback[-U,I,+O,+R]=conduit.GenPipe[U,I,Either[I,O],R]"></a>
+      <a id="Feedback[-U,I,+O,+R]:Feedback[U,I,O,R]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Feedback</span><span class="tparams">[<span name="U">-U</span>, <span name="I">I</span>, <span name="O">+O</span>, <span name="R">+R</span>]</span><span class="result"> = <a href="GenPipe.html" class="extype" name="conduit.GenPipe">GenPipe</a>[<span class="extype" name="conduit.Feedback.U">U</span>, <span class="extype" name="conduit.Feedback.I">I</span>, <span class="extype" name="scala.Either">Either</span>[<span class="extype" name="conduit.Feedback.I">I</span>, <span class="extype" name="conduit.Feedback.O">O</span>], <span class="extype" name="conduit.Feedback.R">R</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Represents a pipe that feeds a part of its output back as its own input.</p><div class="fullcomment"><div class="comment cmt"><p>Represents a pipe that feeds a part of its output back as its own input.
+This is primarily useful for implementing leftovers, when a component
+needs to return a part of its input back.
+</p></div></div>
+    </li><li name="conduit.Finalizer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="FinalizerextendsObject"></a>
       <a id="Finalizer:Finalizer"></a>
       <h4 class="signature">

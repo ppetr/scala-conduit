@@ -11,7 +11,7 @@ A `Pipe` is a component that receives objects of a given type and responds with 
 There are two main ways how to compose pipes:
 
 - Sequence them. When the first pipe finishes processing, the second pipe continues. It's similar to simple sequencing of commands in a UNIX pipeline.
-- Fuse them. The output of the first pipe (called upstream) is used as the input for the second one (called downstream). And if the first pipe finishes processing, the second pipe also receives its final result. This is similar to combining UNIX pipelines with `|`.
+- Fuse them. The output of the first pipe (called _upstream_) is used as the input for the second one (called _downstream_). And if the first pipe finishes processing, the second pipe also receives its final result. This is similar to combining UNIX pipelines with `|`.
 
 Unlike UNIX pipelines, when a pipeline is run, it is executed in a single thread and values are only generated on demand. A downstream pipe is only invoked when an upstream pipe requests input and is suspended again when it produces the requested value. So if an upstream pipe requests no input at all, the downstream pipe is never invoked.
 
@@ -26,6 +26,47 @@ Requires Scala 2.10.
 Generated documentation is available [here](http://ppetr.github.com/scala-conduit/#conduit.package). It is updated only from time to time so it might not reflect the latest changes.
 
 ## Core concepts
+
+_Note:_ To understand how type parameters of pipes work, you need to understand Scala's [covariant and contravariant types](https://en.wikipedia.org/wiki/Covariance_and_contravariance_(computer_science)).
+
+### Pipe
+
+A general pipe is defined as
+
+```scala
+sealed trait GenPipe[-U,-I,+O,+R]
+```
+
+where:
+
+- `U` is the type of the value received from upstream when there is no more input available. This is the final result of the upstream pipe.
+- `I` is the type of values received from upstream.
+- `O` is the type of output values produced by this pipe and sent downstream.
+- `R` is the final result of the pipe when it finishes processing.
+
+In majority of cases a pipe doesn't care about the result of its upstream pipe, so `U` is set to `Any`. This is so common that we define alias
+
+```scala
+type Pipe[-I,+O,+R]     = GenPipe[Any,I,O,R]
+```
+
+#### Sources and sinks
+
+A _source_ is a pipe that doesn't care about any possible input, so its input
+type is `Any`.. Usually a source never requests input from upstream.
+
+A _sink_ is a pipe that never produces output.
+
+We also need to distinguish pipes that cannot receive any input. Their `I` parameter is set to `Nothing`. We'll use this kind of pipes to express how to continue processing when input is exhausted.
+
+We define type aliases for these concepts as:
+
+```scala
+type Sink[-I,+R]        = Pipe[I,Nothing,R]
+type Source[+O,+R]      = Pipe[Any,O,R]
+type NoInput[-U,+O,+R]  = GenPipe[U,Nothing,O,R]
+```
+
 
 TODO
 

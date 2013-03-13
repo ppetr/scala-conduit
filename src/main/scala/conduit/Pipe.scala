@@ -69,7 +69,7 @@ private final case class Bind[-U,-I,+O,+R,S](first: GenPipe[U,I,O,S], cont: S =>
   extends GenPipe[U,I,O,R];
 private final case class Fuse[-U,-I,X,M,+O,+R](up: GenPipe[U,I,X,M], down: GenPipe[M,X,O,R])
   extends GenPipe[U,I,O,R];
-private final case class Feedback[-U,I,+O,+R](inner: GenPipe[U,I,Either[I,O],R])
+private final case class Feedback[-U,I,+O,+R](inner: Feedback[U,I,O,R])
   extends GenPipe[U,I,O,R];
 
 
@@ -211,7 +211,7 @@ object Pipe
    * of type `Left(i)` are discarded.
    */
   @inline
-  def feedback[U,I,O,R](pipe: GenPipe[U,I,Either[I,O],R]): GenPipe[U,I,O,R] =
+  def feedback[U,I,O,R](pipe: Feedback[U,I,O,R]): GenPipe[U,I,O,R] =
     Feedback(pipe);
 
   // -------------------------------------------------------------------
@@ -441,11 +441,11 @@ object Pipe
     }
     */
 
-  private def stepFeedback[U,I,O,R](start: GenPipe[U,I,Either[I,O],R]) = {
+  private def stepFeedback[U,I,O,R](start: Feedback[U,I,O,R]) = {
     import collection.immutable.Queue._
     type Queue[+I] = collection.immutable.Queue[I]
 
-    def f(p: GenPipe[U,I,Either[I,O],R], buf: Queue[I]): PipeCore[U,I,O,R] =
+    def f(p: Feedback[U,I,O,R], buf: Queue[I]): PipeCore[U,I,O,R] =
       stepPipe(p) match {
         case Done(r)          => Done(r)
         case Delay(next, fin) => Delay(() => f(next(), buf), fin)

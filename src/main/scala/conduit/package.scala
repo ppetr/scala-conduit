@@ -27,4 +27,11 @@ package object conduit {
    * upstream.
    */
   type NoInput[-U,+O,+R]  = GenPipe[U,Nothing,O,R]
+
+  /**
+   * Represents a pipe that feeds a part of its output back as its own input.
+   * This is primarily useful for implementing leftovers, when a component
+   * needs to return a part of its input back.
+   */
+  type Feedback[-U,I,+O,+R] = GenPipe[U,I,Either[I,O],R]
 }

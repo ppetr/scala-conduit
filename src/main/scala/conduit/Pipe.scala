@@ -77,11 +77,13 @@ private final case class Feedback[-U,I,+O,+R](inner: Feedback[U,I,O,R])
  * Defines operations for constructing pipes as well as the standard methods
  * for running them.
  *
- * The core operations are: [[[Pipe.request request]]],
- * [[Pipe.respond respond]],
- * [[Pipe.done done]], [[Pipe.flatMap flatMap]], [[Pipe.pipe pipe]]
- * and [[Pipe.delay delay]]. All others are derived
- * from them.
+ * The core operations are: [[Pipe.request[U,I]* request]],
+ * [[Pipe.respond[O]* respond]],
+ * [[Pipe.done[R]* done]], [[Pipe.flatMap flatMap]], [[Pipe.pipe pipe]],
+ * [[Pipe.delay delay]] and [[Pipe.feedback feedback]]. All others can derived
+ * from them. Most methods also have a variant whose last parameter is the next
+ * pipe in sequence: Instead of `respond(x) >> ...` you can write (slightly
+ * faster) `respond(x, ...)`.
  */
 object Pipe
   extends Runner
@@ -273,7 +275,7 @@ object Pipe
    * these pipes cannot receive input.
    *
    * This is a shorthand for [[unfoldI]] with each input produced by `f` wrapped
-   * by [[blockInput]].
+   * by [[blockInput[O,R]* blockedInput]].
    */
   def unfold[U,I,O,R](f: I => NoInput[Unit,O,Any], end: U => R = const(()))(implicit finalizer: Finalizer): GenPipe[U,I,O,R] =
     unfoldI[U,I,O,R](i => blockInput(f(i)), end)

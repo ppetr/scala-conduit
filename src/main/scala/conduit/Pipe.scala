@@ -69,7 +69,7 @@ private final case class Bind[-U,-I,+O,+R,S](first: GenPipe[U,I,O,S], cont: S =>
   extends GenPipe[U,I,O,R];
 private final case class Fuse[-U,-I,X,M,+O,+R](up: GenPipe[U,I,X,M], down: GenPipe[M,X,O,R])
   extends GenPipe[U,I,O,R];
-private final case class Feedback[-U,I,+O,+R](inner: Feedback[U,I,O,R])
+private final case class FeedbackLoop[-U,I,+O,+R](inner: Feedback[U,I,O,R])
   extends GenPipe[U,I,O,R];
 
 
@@ -159,7 +159,7 @@ object Pipe
 
   /**
    * Request input from upstream. If there is input available, it is passed to
-   * `cont`. If no input is availabe, the upstream final result is processed
+   * `cont`. If no input is available, the upstream final result is processed
    * with `end` and the result is returned. This is often useful when
    * constructing filter-like pipes that finish when upstream finishes.
    */
@@ -214,7 +214,7 @@ object Pipe
    */
   @inline
   def feedback[U,I,O,R](pipe: Feedback[U,I,O,R]): GenPipe[U,I,O,R] =
-    Feedback(pipe);
+    FeedbackLoop(pipe);
 
   // -------------------------------------------------------------------
 
@@ -384,7 +384,7 @@ object Pipe
       case p@Delay(_,_)           => p;
       case Fuse(up, down)         => stepFuse(up, down);
       case Bind(next, cont, fin)  => stepBind(next, cont, fin);
-      case Feedback(inner)        => stepFeedback(inner);
+      case FeedbackLoop(inner)    => stepFeedback(inner);
     }
 
   private def stepBind[U,I,O,R,S](startPipe: GenPipe[U,I,O,S], cont: S => GenPipe[U,I,O,R], fin: Finalizer): PipeCore[U,I,O,R] = {

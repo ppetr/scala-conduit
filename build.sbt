@@ -12,3 +12,6 @@ scalacOptions ++= Seq("-deprecation", "-feature")
 
 //libraryDependencies += "org.scala-tools.testing" %% "scalacheck" % "1.9" % "test"
 libraryDependencies += "org.scalatest" % "scalatest_2.10" % "1.9.1" % "test"
+
+// Measure all tests:
+//testOptions in Test += Tests.Argument("-oD")

@@ -79,12 +79,16 @@ object IO {
   /**
    * Recursively list files under a given directory. First output immediate
    * descendants and then their content recursively.
+   *
+   * Implemented using [[Pipe.feedback]].
    */
   def listRec: Pipe[File,File,Unit] = {
     import Util._;
     import Finalizer.empty
     def f: Pipe[File,Either[File,File],Unit] =
-      mapF((_: File).listFiles.toIterable) >->
+      mapF((f: File) => {
+        Option(f.listFiles).map(_.toIterable) getOrElse Iterable.empty
+      }) >->
         fromIterable >->
         unfoldI(f => if (f.isFile()) respond(Right(f))
                      else if (f.isDirectory()) respond(Left(f))
@@ -97,52 +101,5 @@ object IO {
         (fromIterator(dirs) >-> unfoldI(listRec _));
         */
     feedback(f)
-  }
- 
-
-  // -----------------------------------------------------------------
-
-
-  protected def time[R](body: => R): R = {
-    val start = System.currentTimeMillis;
-    try {
-      body;
-    } finally {
-      val end = System.currentTimeMillis;
-      System.err.println("Took " + (end - start));
-    }
-  }
-
-  def main(argv: Array[String]) {
-    import Finalizer.empty
-    try {
-      if (true)
-      time {
-        val child = Runtime.getRuntime().exec(Array(
-            "/bin/sh", "-c", "find /home/p/projects/sosirecr/ -name '*java' -type f | xargs cat" ));
-        val is = child.getInputStream();
-        //val i = readLines(new BufferedReader(new InputStreamReader(is)));
-        val i = new BufferedReader(new InputStreamReader(is)).asPipe >-> readLines;
-
-        val f = filter[String,Unit](s => s.length < 30);
-        val o = writeLines(new OutputStreamWriter(System.out));
-        runPipe(i >-> f >-> o);
-
-        System.err.println("Process terminated.");
-        child.waitFor();
-        System.err.println("Exit status: " + child.exitValue());
-        //System.exit(0);
-      } else
-      time {
-        val i = List("abc", "efg4", "123").toSource;
-        val f = filter[String,Unit](s => s.length <= 3);
-        val o = writeLines(new OutputStreamWriter(System.out));
-        runPipe(i >-> f >-> o);
-        System.err.println("Finished.");
-        System.exit(0);
-      }
-    } catch {
-      case (ex: Exception) => ex.printStackTrace;
-    }
   }
 }

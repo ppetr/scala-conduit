@@ -69,25 +69,4 @@ object NIO {
           if (b.hasRemaining()) Some(respond(b)) else None
         });
   }
-
-
-  // -----------------------------------------------------------------
-
-  def main(argv: Array[String]) =
-  {
-    import Util._;
-    import Finalizer.empty
-
-    val log: Sink[String,Unit] =
-      writeLines(new OutputStreamWriter(System.out));
-
-    val pipe =
-      new File(".").asPipe >->
-        listRec >->
-        filter[File,Unit](_.getName().endsWith(".scala")) >->
-        readLinesFile >->
-        log;
-
-    runPipe(pipe);
-  }
 }

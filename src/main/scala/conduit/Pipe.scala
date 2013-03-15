@@ -303,12 +303,22 @@ object Pipe
   /**
    * Processes input with a given function and passes it to output.
    * Runs the finalizer at the end.
+   *
+   * This more general version adds a function that converts the upstream
+   * result into this pipe's result.
    */
-  def mapF[U,I,O](f: I => O, runFinalizer: Boolean = true)(implicit finalizer: Finalizer): GenPipe[U,I,O,U] = {
-    def loop: GenPipe[U,I,O,U] =
-      requestF(x => respond(f(x), loop), u => u, runFinalizer)
+  def mapF[U,I,O,R](f: I => O, end: U => R, runFinalizer: Boolean = true)(implicit finalizer: Finalizer): GenPipe[U,I,O,R] = {
+    def loop: GenPipe[U,I,O,R] =
+      requestF(x => respond(f(x), loop), end, runFinalizer)
     loop
   }
+  /**
+   * Processes input with a given function and passes it to output.
+   * Runs the finalizer at the end.
+   */
+  @inline
+  def mapF[I,O](f: I => O, runFinalizer: Boolean = true)(implicit finalizer: Finalizer): Pipe[I,O,Unit] =
+    mapF[Any,I,O,Unit](f, const(()), runFinalizer)
 
   /**
    * Folds the input using a given function. Produces no output.

@@ -100,7 +100,7 @@ object Util {
       if (Thread.interrupted())
         throw new InterruptedException;
       x
-    })
+    }, identity _)
 
   /**
    * A trait for structures that can be converted to source pipes.

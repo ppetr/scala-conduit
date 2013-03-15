@@ -90,8 +90,17 @@ object Util {
   def fromIterator[A]: Pipe[Iterator[A],A,Unit] =
     unfold(i => fromIterator(i));
 
-  //def toCol[A,O,C <: Growable[A]](c: C): Pipe[A,O,C] =
 
+  def toCol[A,C <: Growable[A]](c: C): Sink[A,C] =
+    sinkF[Any,A,C](c += _, (_) => c)(Finalizer.empty)
+
+
+  def chkInterrupted[U,I]: GenPipe[U,I,I,U] =
+    mapF(x => {
+      if (Thread.interrupted())
+        throw new InterruptedException;
+      x
+    })
 
   /**
    * A trait for structures that can be converted to source pipes.
@@ -112,37 +121,5 @@ object Util {
    */
   implicit class IterableToSource[A](val iterable: Iterable[A]) extends AnyVal with SourceLike[A] {
     override def toSource = fromIterable(iterable);
-  }
-
-
-
-  val feedbackTest = {
-    implicit val fin = Finalizer.empty;
-    def loop: Pipe[String,Either[String,Char],Unit] =
-      requestI(x => if (x.length >= 1)
-        respond(Right(x.charAt(0)), respond(Left(x.substring(1)), loop))
-      else
-        loop
-      )
-    loop
-  }
-
-
-  def main(argv: Array[String]) {
-    import Finalizer.empty
-
-    runPipe(
-      Seq("Abcd, ", "kocka prede. ", "Kocour mota, ", "pes pocita.").toSource >->
-      feedback(feedbackTest) >->
-      sinkF(print _)(Finalizer.empty)
-    );
-    println()
-
-    println(
-      runPipe(
-        (1 until 10000000).toSource >->
-        foldF[Int,Int](_ + _, 0)
-      )
-    );
   }
 }

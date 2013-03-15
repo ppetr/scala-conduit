@@ -50,13 +50,17 @@ class TestUtil extends FunSuite with Timeouts {
 
   test("a long running pipe with 1000000 inputs") {
     import Span._
+    import Time._
     failAfter(Span(60, Seconds)) {
-      val sum = runPipe(
-        (1L to 1000000L).toSource >->
-        foldF[Long,Long](_ + _, 0L) >->
-        chkInterrupted
-      );
-      assert(sum === 500000500000L);
+      val (_, time) = timeMS {
+        val sum = runPipe(
+          (1L to 1000000L).toSource >->
+          foldF[Long,Long](_ + _, 0L) >->
+          chkInterrupted
+        );
+        assert(sum === 500000500000L);
+      }
+      info("Took %dms".format(time));
     }
   }
 }

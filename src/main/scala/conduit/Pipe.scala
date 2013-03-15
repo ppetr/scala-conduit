@@ -299,6 +299,13 @@ object Pipe
     loop
   }
 
+
+  /**
+   * Runs a given action on each element and passes it downstream unmodified.
+   */
+  def foreach[U,A](f: A => Any): GenPipe[U,A,A,U] =
+    mapF[U,A,A,U](x => { f(x); x }, identity _)
+
   /**
    * Processes input with a given function and passes it to output.
    * Runs the finalizer at the end.

@@ -293,8 +293,7 @@ object Pipe
   }
 
 
-  def idP[A]: Pipe[A,A,Unit] = {
-    implicit val fin = Finalizer.empty;
+  def idP[A](implicit fin: Finalizer = Finalizer.empty): Pipe[A,A,Unit] = {
     def loop: Pipe[A,A,Unit] =
       requestI(x => respond(x, loop));
     loop

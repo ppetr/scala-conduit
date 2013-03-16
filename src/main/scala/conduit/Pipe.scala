@@ -134,8 +134,7 @@ object Pipe
    */
   @inline
   def request[U,I]: GenPipe[U,I,Nothing,Either[U,I]] =
-    //request((i: Either[U,I]) => Done(i))(Finalizer.empty);
-    request((i: I) => done(Right(i)), (u: U) => done(Left(u)));
+    request((i: I) => done(Right(i)), (u: U) => done(Left(u)))(Finalizer.empty);
   /**
    * Request input from upstream. Proceed either `cont` if an input value is
    * available, otherwise proceed with `end` (which receives the final upstream
@@ -283,7 +282,7 @@ object Pipe
   def discardOutput[I,R](p: Pipe[I,Any,Unit]): Sink[I,Unit] =
     pipe(p, discardOutput);
   val discardOutput: Pipe[Any,Nothing,Unit] =
-    requestI(const(discardOutput));
+    requestI(const(discardOutput))(Finalizer.empty);
 
 
   /**
@@ -319,7 +318,7 @@ object Pipe
   /**
    * Runs a given action on each element and passes it downstream unmodified.
    */
-  def foreach[U,A](f: A => Any): GenPipe[U,A,A,U] =
+  def foreach[U,A](f: A => Any)(implicit finalizer: Finalizer): GenPipe[U,A,A,U] =
     mapF[U,A,A,U](x => { f(x); x }, identity _)
 
   /**

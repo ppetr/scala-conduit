@@ -42,7 +42,7 @@ object NIO {
     };
 
   def readFiles(buf: ByteBuffer): Pipe[File,ByteBuffer,Unit] = {
-    import Finalizer.empty
+    implicit val fin = Finalizer.empty
     unfoldI(f => readFile(f, buf));
   }
 
@@ -64,7 +64,7 @@ object NIO {
    * upstream a new buffer.
    */
   def leftovers[B <: Buffer]: Pipe[B,B,Unit] = {
-    import Finalizer.empty;
+    implicit val fin = Finalizer.empty
     unfoldI((b: B) => untilF[Any,B,B] {
           if (b.hasRemaining()) Some(respond(b)) else None
         });

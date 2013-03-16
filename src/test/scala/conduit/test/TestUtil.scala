@@ -51,6 +51,7 @@ class TestUtil extends FunSuite with Timeouts {
   test("a long running pipe with 1000000 inputs") {
     import Span._
     import Time._
+    implicit val fin = Finalizer.empty
     failAfter(Span(60, Seconds)) {
       val (_, time) = timeMS {
         val sum = runPipe(

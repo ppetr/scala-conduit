@@ -28,19 +28,21 @@ object IO {
   implicit def closeFin(implicit c: Closeable): Finalizer =
     Finalizer { System.err.println("Closing " + c); c.close() }
 
+
   /**
    * For each file on input output its content as lines.
    */
   lazy val readLinesFile: Pipe[File,String,Unit] = {
-    import Finalizer.empty
+    implicit val fin = Finalizer.empty
     mapF((f: File) => new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8"))) >-> readLines
   }
+
 
   /**
    * For each `BufferedReader` on input output its content as lines.
    */
   lazy val readLines: Pipe[BufferedReader,String,Unit] =
-    unfoldI(readLines _);
+    unfoldI(readLines _)(Finalizer.empty);
 
   /**
    * Output the content of a `BufferedReader` as lines.
@@ -84,7 +86,7 @@ object IO {
    */
   def listRec: Pipe[File,File,Unit] = {
     import Util._;
-    import Finalizer.empty
+    implicit val fin = Finalizer.empty
     def f: Pipe[File,Either[File,File],Unit] =
       mapF((f: File) => {
         Option(f.listFiles).map(_.toIterable) getOrElse Iterable.empty

@@ -69,7 +69,7 @@ object Finalizer {
   /**
    * The empty finalizer that doesn't run any action.
    */
-  implicit val empty: Finalizer = new Finalizer(Seq.empty);
+  val empty: Finalizer = new Finalizer(Seq.empty);
 
   /**
    * Create a finalizer from a block of code.

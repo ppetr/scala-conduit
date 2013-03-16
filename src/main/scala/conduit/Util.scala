@@ -43,7 +43,7 @@ object Util {
    * given function.
    */
   def filter[U,A,R](p: A => Boolean, end: U => R): GenPipe[U,A,A,R] = {
-    import Finalizer.empty
+    implicit val fin = Finalizer.empty
     unfoldI[U,A,A,R](x => if (p(x)) respond(x) else done, end)
   }
 
@@ -51,7 +51,7 @@ object Util {
    * Resend input to output until the given predicate is satisfied.
    */
   def takeWhile[A,R](p: A => Boolean): Pipe[A,A,Unit] = {
-    import Finalizer.empty
+    implicit val fin = Finalizer.empty
     def loop: Pipe[A,A,Unit] =
       requestI[A,A,Unit]((x: A) =>
         if (p(x)) respond(x, loop) else done
@@ -73,7 +73,7 @@ object Util {
    * Create a source pipe from an iterator.
    */
   def fromIterator[A](i : Iterator[A]): Source[A,Unit] = {
-    import Finalizer.empty
+    implicit val fin = Finalizer.empty
     untilF(if (i.hasNext) Some(respond[A](i.next())) else None);
   }
 
@@ -82,13 +82,13 @@ object Util {
    * content.
    */
   def fromIterable[A]: Pipe[Iterable[A],A,Unit] =
-    unfold(i => fromIterable(i));
+    unfold((i: Iterable[A]) => fromIterable(i))(Finalizer.empty);
   /**
    * Create a source pipe that reads iterators on input and outputs their
    * content.
    */
   def fromIterator[A]: Pipe[Iterator[A],A,Unit] =
-    unfold(i => fromIterator(i));
+    unfold((i: Iterator[A]) => fromIterator(i))(Finalizer.empty);
 
 
   def toCol[A,C <: Growable[A]](c: C): Sink[A,C] =
@@ -96,11 +96,11 @@ object Util {
 
 
   def chkInterrupted[U,I]: GenPipe[U,I,I,U] =
-    mapF(x => {
+    mapF[U,I,I,U](x => {
       if (Thread.interrupted())
         throw new InterruptedException;
       x
-    }, identity _)
+    }, identity _)(Finalizer.empty)
 
   /**
    * A trait for structures that can be converted to source pipes.

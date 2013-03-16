@@ -19,6 +19,7 @@ package conduit
 import annotation.tailrec
 import collection.mutable.{ArrayBuffer, Buffer, ArrayStack, Stack, Queue}
 import util.control.Exception
+import Finalizer.runIf
 
 /**
  * Accepts input elements of type `I` and when its upstream has no
@@ -166,7 +167,7 @@ object Pipe
   def requestF[U,I,O,R](cont: I => GenPipe[U,I,O,R], end: U => R = const(()), runFinalizer: Boolean = true)(implicit finalizer: Finalizer): GenPipe[U,I,O,R] =
     request[U,I,O,R](cont, (u: U) => {
       val r = end(u);
-      if (runFinalizer) Finalizer.run;
+      runIf(runFinalizer);
       done(r)
     });
 
@@ -224,7 +225,7 @@ object Pipe
     def loop(x: A): GenPipe[U,I,O,B] =
       f(start) match {
         case Left(pipe) => flatMap(pipe, loop _);
-        case Right(b)   => if (runFinalizer) Finalizer.run; done(b);
+        case Right(b)   => runIf(runFinalizer); done(b);
       };
     delay(loop(start));
   }
@@ -234,7 +235,7 @@ object Pipe
     def loop(): GenPipe[U,I,O,Unit] =
       pipe match {
         case Some(pipe) => andThen(pipe, loop());
-        case None       => if (runFinalizer) Finalizer.run; done;
+        case None       => runIf(runFinalizer); done;
       }
     delay { loop() }
   }
@@ -247,8 +248,7 @@ object Pipe
         if (b)
           loop();
         else {
-          if (runFinalizer)
-            Finalizer.run;
+          runIf(runFinalizer);
           done;
         }
       })

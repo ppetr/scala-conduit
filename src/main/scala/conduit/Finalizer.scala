@@ -91,4 +91,12 @@ object Finalizer {
    */
   def run(implicit fin: Finalizer): Unit =
     fin.run(None);
+  /**
+   * Run the action of a finalizer if `cond` is `true`. The finalizer will
+   * not receive any exception. This is a shorthand for common pattern
+   * `if (cond) Finalizer.run`.
+   */
+  @inline
+  def runIf(cond: Boolean)(implicit fin: Finalizer): Unit =
+    if (cond) run(fin);
 }

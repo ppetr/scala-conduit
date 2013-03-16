@@ -89,11 +89,6 @@ private final case class FeedbackLoop[-U,I,+O,+R](inner: Feedback[U,I,O,R])
 object Pipe
   extends Runner
 {
-  /*
-  type LQueue[+A] = collection.immutable.Queue[A]
-  val emptyLQueue: LQueue[Nothing] = collection.immutable.Queue.empty
-  */
-
   @inline
   protected val nextDone: () => Source[Nothing,Unit] = () => done;
   protected def const[A](body: => A): Any => A =
@@ -207,14 +202,6 @@ object Pipe
       c;
     }, finalizer), finalizer);
 
-/*
-  @inline
-  def leftover[I,O,R](left: I, pipe: => Pipe[I,O,R]): Pipe[I,O,R] =
-    Leftover(left, pipe);
-  @inline
-  def leftover[I](left: I): Sink[I,Unit] =
-    Leftover(left, nextDone);
-*/
 
   @inline
   def flatMap[U,I,O,R,S](pipe: GenPipe[U,I,O,S], f: S => GenPipe[U,I,O,R])(implicit finalizer: Finalizer): GenPipe[U,I,O,R] =
@@ -375,14 +362,6 @@ object Pipe
      loop
    }
 
-
-  /*
-  sealed trait Leftover[+I,+R] { val result: R; }
-  final case class HasLeft[+I,+R](left: I, override val result: R)
-    extends Leftover[I,R];
-  final case class NoLeft[+R](override val result: R)
-    extends Leftover[Nothing,R];
-  */
 
 
   override def runPipe[U,O,R](pipe: NoInput[U,O,R], init: U, sender: O => Unit): R = {

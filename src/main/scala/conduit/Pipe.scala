@@ -126,8 +126,8 @@ object Pipe
   def delay[U,I,O,R](inner: => GenPipe[U,I,O,R])(implicit finalizer: Finalizer = Finalizer.empty): GenPipe[U,I,O,R] =
     Delay(() => inner, finalizer);
   /**
-   * Creates a simple pipe that processes the given action and returns the
-   * its. To be composed with `flatMap` or `>>:`.
+   * Creates a simple pipe that processes the given action and returns
+   * its result. To be composed with `flatMap` or `>>:`.
    */
   @inline
   def delayVal[R](body: => R)(implicit finalizer: Finalizer = Finalizer.empty): Source[Nothing,R] =
@@ -177,6 +177,35 @@ object Pipe
   @inline
   def respond[O](o: O)(implicit finalizer: Finalizer): Source[O,Unit] =
     HaveOutput(o, () => done, finalizer);
+
+  /**
+   * Similar to [[respond[U,I,O,R]* respond]]; in addition, if
+   * `runFinalizer` is `true` (the default), it will run the finalizer as
+   * soon as downstream requests new input (this is, just before `cont` is
+   * invoked). This ensures that the finalizer is ''always'' run.
+   *
+   * Example:
+   * {{{
+   *   val is = new FileInputStream(...)
+   *   respondF(is, ...)(Finalizer(is.close()))
+   * }}}
+   * This ensures that the input stream is closed in both cases:
+   *
+   *  - Downstream finishes processing, thus terminating this pipeline
+   *    (this is done by [[respond[U,I,O,R]* respond]] too).
+   *  - Downstream requests new input.
+   *
+   * @param runFinalizer If `true`, the finalizer will be also run just as
+   * downstream requests new input. Can be omitted, the default value is
+   * `true`.
+   */
+  @inline
+  def respondF[U,I,O,R](o: O, cont: => GenPipe[U,I,O,R], runFinalizer: Boolean = true)(implicit finalizer: Finalizer): GenPipe[U,I,O,R] =
+    HaveOutput(o, () => Delay(() => {
+      val c: GenPipe[U,I,O,R] = cont;
+      runIf(runFinalizer);
+      c;
+    }, finalizer), finalizer);
 
 /*
   @inline

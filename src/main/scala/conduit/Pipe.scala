@@ -512,7 +512,7 @@ object Pipe
    * Declares a set of operations that can be performed on a pipe.
    * In particular `flatMap` and all operations derived from it, and pipe composition.
    */
-  trait Monadic[U,I,O,R] extends Any {
+  trait Monadic[-U,-I,+O,+R] extends Any {
     def pipe: GenPipe[U,I,O,R];
 
     /**
@@ -555,27 +555,12 @@ object Pipe
       that >-> pipe;
   }
 
-  protected trait MonadicImpl[U,I,O,R] extends Any with Monadic[U,I,O,R] {
+  /**
+   * An implicit class that adds [[Pipe.Monadic monadic operations]] to [[Pipe]].
+   */
+  implicit class FlatMap[-U,-I,+O,+R](val pipe: GenPipe[U,I,O,R]) extends AnyVal with Monadic[U,I,O,R] {
     @inline def flatMap[U2 <: U,I2 <: I,O2 >: O,B](f: R => GenPipe[U2,I2,O2,B])(implicit finalizer: Finalizer) = Pipe.flatMap(pipe, f)
 
     @inline def >->[X,S](that: GenPipe[R,O,X,S]) = Pipe.pipe(pipe, that);
   }
-
-  /**
-   * An implicit class that adds [[Pipe.Monadic monadic operations]] to [[Pipe]].
-   */
-  implicit class FlatMap[U,I,O,R](val pipe: GenPipe[U,I,O,R])
-    extends AnyVal with MonadicImpl[U,I,O,R];
-  /**
-   * An implicit class that adds [[Pipe.Monadic monadic operations]] to pipes
-   * with no results (that is to infinite pipes that never return).
-   */
-  implicit class FlatMapResultNothing[U,I,O](val pipe: GenPipe[U,I,O,Nothing])
-    extends AnyVal with MonadicImpl[U,I,O,Nothing];
-  /**
-   * An implicit class that adds [[Pipe.Monadic monadic operations]] to pipes
-   * with no output (sinks).
-   */
-  implicit class FlatMapOutputNothing[U,I,R](val pipe: GenPipe[U,I,Nothing,R])
-    extends AnyVal with MonadicImpl[U,I,Nothing,R];
 }

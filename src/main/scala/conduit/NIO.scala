@@ -25,13 +25,20 @@ object NIO {
   import IO._;
   import Util._;
 
+  /**
+   * The buffers produced by this methods are prepared for reading,
+   * with [[java.nio.ByteBuffer.flip()]] already called on them.
+   */
   def readChannel(buf: ByteBuffer, c: ReadableByteChannel): Source[ByteBuffer,Unit] = {
     implicit val fin = Finalizer({ c.close() });
     untilF[Any,Any,ByteBuffer]({
         buf.clear();
         val i = c.read(buf);
         if (i < 0) None;
-        else Some(respond(buf));
+        else {
+          buf.flip();
+          Some(respond(buf));
+        }
       });
   }
 
@@ -49,6 +56,10 @@ object NIO {
   def writeToOutputStream(os: OutputStream): Pipe[Array[Byte],Nothing,Unit] =
     sinkF(os.write(_:Array[Byte]))(closeFin(os))
 
+  /**
+   * Expects that the buffers coming from upstream are prepared for reading,
+   * (for example with [[java.nio.Buffer.flip()]] already called on them).
+   */
   def writeChannel(c: WritableByteChannel): Sink[ByteBuffer,Unit] =
     sinkF(c.write(_:ByteBuffer))(closeFin(c));
 

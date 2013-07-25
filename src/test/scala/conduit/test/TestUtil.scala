@@ -42,7 +42,7 @@ class TestUtil extends FunSuite with Timeouts {
     val col = runPipe(
       Seq("Abcd, ", "kocka prede. ", "Kocour mota, ", "pes pocita.").toSource >->
       feedback(feedbackTest) >->
-      toCol(new collection.mutable.ArrayBuffer[Char])
+      toCol
     );
 
     assert(col.mkString === "Abcd, kocka prede. Kocour mota, pes pocita.")

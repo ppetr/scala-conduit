@@ -91,8 +91,11 @@ object Util {
     unfold((i: Iterator[A]) => fromIterator(i))(Finalizer.empty);
 
 
-  def toCol[A,C <: Growable[A]](c: C): Sink[A,C] =
-    sinkF[Any,A,C](c += _, (_) => c)(Finalizer.empty)
+  def toCol[A,C](implicit cbf: scala.collection.generic.CanBuildFrom[Nothing,A,C]): Sink[A,C] =
+    delay {
+      val b = cbf();
+      sinkF[Any,A,C](b += _, (_) => b.result())(Finalizer.empty);
+    }
 
 
   def chkInterrupted[U,I]: GenPipe[U,I,I,U] =

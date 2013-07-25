@@ -9,11 +9,6 @@
           
       <link href="../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
       <link href="../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
-      <script type="text/javascript" src="../lib/jquery.js" id="jquery-js"></script>
-      <script type="text/javascript" src="../lib/jquery-ui.js"></script>
-      <script type="text/javascript" src="../lib/template.js"></script>
-      <script type="text/javascript" src="../lib/tools.tooltip.js"></script>
-      
       <script type="text/javascript">
          if(top === self) {
             var url = '../index.html';
@@ -224,6 +219,19 @@ singleton value.</p>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="conduit.Util#chkInterrupted" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="chkInterrupted[U,I]:conduit.GenPipe[U,I,I,U]"></a>
+      <a id="chkInterrupted[U,I]:GenPipe[U,I,I,U]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">chkInterrupted</span><span class="tparams">[<span name="U">U</span>, <span name="I">I</span>]</span><span class="result">: <a href="GenPipe.html" class="extype" name="conduit.GenPipe">GenPipe</a>[<span class="extype" name="conduit.Util.chkInterrupted.U">U</span>, <span class="extype" name="conduit.Util.chkInterrupted.I">I</span>, <span class="extype" name="conduit.Util.chkInterrupted.I">I</span>, <span class="extype" name="conduit.Util.chkInterrupted.U">U</span>]</span>
+      </span>
+      </h4>
+      
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -236,8 +244,11 @@ singleton value.</p>
         <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<span class="extype" name="java.lang">java.lang</span>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
-                <span class="name">@throws</span><span class="args">()</span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
+    </span>)</span>
               
         </dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -266,19 +277,6 @@ singleton value.</p>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="conduit.Util#feedbackTest" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="feedbackTest:conduit.Pipe[String,Either[String,Char],Unit]"></a>
-      <a id="feedbackTest:Pipe[String,Either[String,Char],Unit]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">feedbackTest</span><span class="result">: <a href="package.html#Pipe[-I,+O,+R]=conduit.GenPipe[Any,I,O,R]" class="extmbr" name="conduit.Pipe">Pipe</a>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Either">Either</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Char">Char</span>], <span class="extype" name="scala.Unit">Unit</span>]</span>
-      </span>
-      </h4>
-      
     </li><li name="conduit.Util#filter" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="filter[U,A,R](p:A=&gt;Boolean,end:U=&gt;R):conduit.GenPipe[U,A,A,R]"></a>
       <a id="filter[U,A,R]((A)⇒Boolean,(U)⇒R):GenPipe[U,A,A,R]"></a>
@@ -324,8 +322,11 @@ downstream result unmodified.
         <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<span class="extype" name="java.lang">java.lang</span>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
-                <span class="name">@throws</span><span class="args">()</span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
               
         </dd></dl></div>
     </li><li name="conduit.Util#fromIterable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
@@ -434,19 +435,6 @@ content.</p>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="conduit.Util#main" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="main(argv:Array[String]):Unit"></a>
-      <a id="main(Array[String]):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">main</span><span class="params">(<span name="argv">argv: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4>
-      
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -512,6 +500,19 @@ content.</p>
       </span>
       </h4>
       <p class="shortcomment cmt">Resend input to output until the given predicate is satisfied.</p>
+    </li><li name="conduit.Util#toCol" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="toCol[A,C](implicitcbf:scala.collection.generic.CanBuildFrom[Nothing,A,C]):conduit.Sink[A,C]"></a>
+      <a id="toCol[A,C](CanBuildFrom[Nothing,A,C]):Sink[A,C]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toCol</span><span class="tparams">[<span name="A">A</span>, <span name="C">C</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="cbf">cbf: <span class="extype" name="scala.collection.generic.CanBuildFrom">CanBuildFrom</span>[<span class="extype" name="scala.Nothing">Nothing</span>, <span class="extype" name="conduit.Util.toCol.A">A</span>, <span class="extype" name="conduit.Util.toCol.C">C</span>]</span>)</span><span class="result">: <a href="package.html#Sink[-I,+R]=conduit.package.Pipe[I,Nothing,R]" class="extmbr" name="conduit.Sink">Sink</a>[<span class="extype" name="conduit.Util.toCol.A">A</span>, <span class="extype" name="conduit.Util.toCol.C">C</span>]</span>
+      </span>
+      </h4>
+      
     </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>
@@ -538,7 +539,10 @@ content.</p>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
-                <span class="name">@throws</span><span class="args">()</span>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
               
         </dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -554,7 +558,10 @@ content.</p>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
-                <span class="name">@throws</span><span class="args">()</span>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
               
         </dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -570,7 +577,10 @@ content.</p>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
-                <span class="name">@throws</span><span class="args">()</span>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
               
         </dd></dl></div>
     </li></ol>
@@ -602,7 +612,6 @@ content.</p>
       <div id="tooltip"></div>
 
       <div id="footer">  </div>
-
-
+      <script defer="defer" type="text/javascript" id="jquery-js" src="../lib/jquery.js"></script><script defer="defer" type="text/javascript" id="jquery-ui-js" src="../lib/jquery-ui.js"></script><script defer="defer" type="text/javascript" id="tools-tooltip-js" src="../lib/tools.tooltip.js"></script><script defer="defer" type="text/javascript" id="template-js" src="../lib/template.js"></script>
     </body>
       </html>

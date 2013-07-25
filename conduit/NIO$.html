@@ -9,11 +9,6 @@
           
       <link href="../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
       <link href="../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
-      <script type="text/javascript" src="../lib/jquery.js" id="jquery-js"></script>
-      <script type="text/javascript" src="../lib/jquery-ui.js"></script>
-      <script type="text/javascript" src="../lib/template.js"></script>
-      <script type="text/javascript" src="../lib/tools.tooltip.js"></script>
-      
       <script type="text/javascript">
          if(top === self) {
             var url = '../index.html';
@@ -180,8 +175,11 @@
         <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<span class="extype" name="java.lang">java.lang</span>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
-                <span class="name">@throws</span><span class="args">()</span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
+    </span>)</span>
               
         </dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -222,8 +220,11 @@
         <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<span class="extype" name="java.lang">java.lang</span>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
-                <span class="name">@throws</span><span class="args">()</span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
               
         </dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -265,7 +266,7 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="conduit.NIO#leftovers" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="conduit.NIO#leftovers" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="leftovers[B&lt;:java.nio.Buffer]:conduit.Pipe[B,B,Unit]"></a>
       <a id="leftovers[B&lt;:Buffer]:Pipe[B,B,Unit]"></a>
       <h4 class="signature">
@@ -279,20 +280,10 @@
       </h4>
       <p class="shortcomment cmt">Ensures that each buffer is fully consumed by downstream
 (<code>hasRemaining()</code> returns <code>false</code>) before requesting
-upstream a new buffer.</p>
-    </li><li name="conduit.NIO#main" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="main(argv:Array[String]):Unit"></a>
-      <a id="main(Array[String]):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">main</span><span class="params">(<span name="argv">argv: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4>
-      
+upstream a new buffer.</code></code></p><div class="fullcomment"><div class="comment cmt"><p>Ensures that each buffer is fully consumed by downstream
+(<code>hasRemaining()</code> returns <code>false</code>) before requesting
+upstream a new buffer.
+</p></div></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -344,7 +335,8 @@ upstream a new buffer.</p>
         <span class="name">readChannel</span><span class="params">(<span name="buf">buf: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>, <span name="c">c: <span class="extype" name="java.nio.channels.ReadableByteChannel">ReadableByteChannel</span></span>)</span><span class="result">: <a href="package.html#Source[+O,+R]=conduit.package.Pipe[Any,O,R]" class="extmbr" name="conduit.Source">Source</a>[<span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span>, <span class="extype" name="scala.Unit">Unit</span>]</span>
       </span>
       </h4>
-      
+      <p class="shortcomment cmt">The buffers produced by this methods are prepared for reading,
+with <span class="extype" name="java.nio.ByteBuffer.flip()">java.nio.ByteBuffer.flip()</span> already called on them.</p>
     </li><li name="conduit.NIO#readFile" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="readFile(file:java.io.File,buf:java.nio.ByteBuffer):conduit.Source[java.nio.ByteBuffer,Unit]"></a>
       <a id="readFile(File,ByteBuffer):Source[ByteBuffer,Unit]"></a>
@@ -410,7 +402,10 @@ upstream a new buffer.</p>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
-                <span class="name">@throws</span><span class="args">()</span>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
               
         </dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -426,7 +421,10 @@ upstream a new buffer.</p>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
-                <span class="name">@throws</span><span class="args">()</span>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
               
         </dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -442,7 +440,10 @@ upstream a new buffer.</p>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
-                <span class="name">@throws</span><span class="args">()</span>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
               
         </dd></dl></div>
     </li><li name="conduit.NIO#writeChannel" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
@@ -457,7 +458,8 @@ upstream a new buffer.</p>
         <span class="name">writeChannel</span><span class="params">(<span name="c">c: <span class="extype" name="java.nio.channels.WritableByteChannel">WritableByteChannel</span></span>)</span><span class="result">: <a href="package.html#Sink[-I,+R]=conduit.package.Pipe[I,Nothing,R]" class="extmbr" name="conduit.Sink">Sink</a>[<span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span>, <span class="extype" name="scala.Unit">Unit</span>]</span>
       </span>
       </h4>
-      
+      <p class="shortcomment cmt">Expects that the buffers coming from upstream are prepared for reading,
+(for example with <span class="extype" name="java.nio.Buffer.flip()">java.nio.Buffer.flip()</span> already called on them).</p>
     </li><li name="conduit.NIO#writeFile" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="writeFile(file:java.io.File):conduit.Sink[java.nio.ByteBuffer,Any]"></a>
       <a id="writeFile(File):Sink[ByteBuffer,Any]"></a>
@@ -513,7 +515,6 @@ upstream a new buffer.</p>
       <div id="tooltip"></div>
 
       <div id="footer">  </div>
-
-
+      <script defer="defer" type="text/javascript" id="jquery-js" src="../lib/jquery.js"></script><script defer="defer" type="text/javascript" id="jquery-ui-js" src="../lib/jquery-ui.js"></script><script defer="defer" type="text/javascript" id="tools-tooltip-js" src="../lib/tools.tooltip.js"></script><script defer="defer" type="text/javascript" id="template-js" src="../lib/template.js"></script>
     </body>
       </html>
